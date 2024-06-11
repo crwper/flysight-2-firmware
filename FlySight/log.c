@@ -122,6 +122,8 @@ typedef enum
 	FS_LOG_SENSOR_VBAT
 } FS_Log_SensorType_t ;
 
+static uint8_t enable_flags;
+
 static void FS_Log_Timer(void)
 {
 	// Call update task
@@ -157,6 +159,11 @@ void FS_Log_UpdateHum(void)
 	char row[150];
 	UINT bw;
 
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+	{
+		Error_Handler();
+	}
+
 	// Get current data point
 	FS_Hum_Data_t *data = &humBuf[humRdI % HUM_COUNT];
 
@@ -183,6 +190,11 @@ void FS_Log_UpdateBaro(void)
 {
 	char row[150];
 	UINT bw;
+
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+	{
+		Error_Handler();
+	}
 
 	// Get current data point
 	FS_Baro_Data_t *data = &baroBuf[baroRdI % BARO_COUNT];
@@ -212,6 +224,11 @@ void FS_Log_UpdateMag(void)
 	char row[150];
 	UINT bw;
 
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+	{
+		Error_Handler();
+	}
+
 	// Get current data point
 	FS_Mag_Data_t *data = &magBuf[magRdI % MAG_COUNT];
 
@@ -240,6 +257,11 @@ void FS_Log_UpdateGNSS(void)
 {
 	char row[150];
 	UINT bw;
+
+	if (!(enable_flags & FS_LOG_ENABLE_GNSS))
+	{
+		Error_Handler();
+	}
 
 	// Get current data point
 	FS_GNSS_Data_t *data = &gnssBuf[gnssRdI % GNSS_COUNT];
@@ -284,6 +306,11 @@ void FS_Log_UpdateTime(void)
 	char row[150];
 	UINT bw;
 
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+	{
+		Error_Handler();
+	}
+
 	// Get current data point
 	FS_GNSS_Time_t *time = &timeBuf[timeRdI % TIME_COUNT];
 
@@ -311,6 +338,11 @@ void FS_Log_UpdateRaw(void)
 {
 	UINT bw;
 
+	if (!(enable_flags & FS_LOG_ENABLE_RAW))
+	{
+		Error_Handler();
+	}
+
 	// Get current data point
 	FS_GNSS_Raw_t *data = &rawBuf[rawRdI % RAW_COUNT];
 
@@ -325,6 +357,11 @@ void FS_Log_UpdateIMU(void)
 {
 	char row[150];
 	UINT bw;
+
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+	{
+		Error_Handler();
+	}
 
 	// Get current data point
 	FS_IMU_Data_t *data = &imuBuf[imuRdI % IMU_COUNT];
@@ -357,6 +394,11 @@ void FS_Log_UpdateVBAT(void)
 {
 	char row[150];
 	UINT bw;
+
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+	{
+		Error_Handler();
+	}
 
 	// Get current data point
 	FS_VBAT_Data_t *data = &vbatBuf[vbatRdI % VBAT_COUNT];
@@ -397,7 +439,6 @@ static void FS_Log_Update(void)
 
 	// Write raw GNSS output
 	while ((HAL_GetTick() < msStart + LOG_TIMEOUT) &&
-			FS_Config_Get()->enable_raw &&
 			(rawRdI != rawIndex))
 	{
 		FS_Log_UpdateRaw();
@@ -467,16 +508,22 @@ static void FS_Log_Sync(void)
 	switch (syncCount % 3)
 	{
 	case 0:
-		f_sync(&gnssFile);
+		if (enable_flags & FS_LOG_ENABLE_GNSS)
+		{
+			f_sync(&gnssFile);
+		}
 		break;
 	case 1:
-		if (FS_Config_Get()->enable_raw)
+		if (enable_flags & FS_LOG_ENABLE_RAW)
 		{
 			f_sync(&rawFile);
 		}
 		break;
 	case 2:
-		f_sync(&sensorFile);
+		if (enable_flags & FS_LOG_ENABLE_SENSOR)
+		{
+			f_sync(&sensorFile);
+		}
 		break;
 	}
 
@@ -516,9 +563,12 @@ static void FS_Log_WriteCommonHeader(FIL *file)
 	f_printf(file, "\n");
 }
 
-void FS_Log_Init(uint32_t temp_folder)
+void FS_Log_Init(uint32_t temp_folder, uint8_t flags)
 {
 	char filename[50];
+
+	// Save enable flags
+	enable_flags = flags;
 
 	// Reset state
 	baroRdI = 0;
@@ -572,20 +622,23 @@ void FS_Log_Init(uint32_t temp_folder)
 	sprintf(filename, "/temp/%04lu", temp_folder);
 	f_mkdir(filename);
 
-	// Open GNSS log file
-	sprintf(filename, "/temp/%04lu/track.csv", temp_folder);
-	if (f_open(&gnssFile, filename, FA_WRITE|FA_CREATE_ALWAYS) != FR_OK)
+	if (enable_flags & FS_LOG_ENABLE_GNSS)
 	{
-		Error_Handler();
+		// Open GNSS log file
+		sprintf(filename, "/temp/%04lu/track.csv", temp_folder);
+		if (f_open(&gnssFile, filename, FA_WRITE|FA_CREATE_ALWAYS) != FR_OK)
+		{
+			Error_Handler();
+		}
+
+		FS_Log_WriteCommonHeader(&gnssFile);
+		f_printf(&gnssFile, "$COL,GNSS,time,lat,lon,hMSL,velN,velE,velD,hAcc,vAcc,sAcc,numSV\n");
+		f_printf(&gnssFile, "$UNIT,GNSS,,deg,deg,m,m/s,m/s,m/s,m,m,m/s,\n");
+		f_printf(&gnssFile, "$DATA\n");
+		f_sync(&gnssFile);
 	}
 
-	FS_Log_WriteCommonHeader(&gnssFile);
-	f_printf(&gnssFile, "$COL,GNSS,time,lat,lon,hMSL,velN,velE,velD,hAcc,vAcc,sAcc,numSV\n");
-	f_printf(&gnssFile, "$UNIT,GNSS,,deg,deg,m,m/s,m/s,m/s,m,m,m/s,\n");
-	f_printf(&gnssFile, "$DATA\n");
-	f_sync(&gnssFile);
-
-	if (FS_Config_Get()->enable_raw)
+	if (enable_flags & FS_LOG_ENABLE_RAW)
 	{
 		// Open raw GNSS file
 		sprintf(filename, "/temp/%04lu/raw.ubx", temp_folder);
@@ -596,41 +649,47 @@ void FS_Log_Init(uint32_t temp_folder)
 		f_sync(&rawFile);
 	}
 
-	// Open sensor log file
-	sprintf(filename, "/temp/%04lu/sensor.csv", temp_folder);
-	if (f_open(&sensorFile, filename, FA_WRITE|FA_CREATE_ALWAYS) != FR_OK)
+	if (enable_flags & FS_LOG_ENABLE_SENSOR)
 	{
-		Error_Handler();
+		// Open sensor log file
+		sprintf(filename, "/temp/%04lu/sensor.csv", temp_folder);
+		if (f_open(&sensorFile, filename, FA_WRITE|FA_CREATE_ALWAYS) != FR_OK)
+		{
+			Error_Handler();
+		}
+
+		FS_Log_WriteCommonHeader(&sensorFile);
+		f_printf(&sensorFile, "$COL,BARO,time,pressure,temperature\n");
+		f_printf(&sensorFile, "$UNIT,BARO,s,Pa,deg C\n");
+		f_printf(&sensorFile, "$COL,HUM,time,humidity,temperature\n");
+		f_printf(&sensorFile, "$UNIT,HUM,s,percent,deg C\n");
+		f_printf(&sensorFile, "$COL,MAG,time,x,y,z,temperature\n");
+		f_printf(&sensorFile, "$UNIT,MAG,s,gauss,gauss,gauss,deg C\n");
+		f_printf(&sensorFile, "$COL,IMU,time,wx,wy,wz,ax,ay,az,temperature\n");
+		f_printf(&sensorFile, "$UNIT,IMU,s,deg/s,deg/s,deg/s,g,g,g,deg C\n");
+		f_printf(&sensorFile, "$COL,TIME,time,tow,week\n");
+		f_printf(&sensorFile, "$UNIT,TIME,s,s,\n");
+		f_printf(&sensorFile, "$COL,VBAT,time,voltage\n");
+		f_printf(&sensorFile, "$UNIT,VBAT,s,volt\n");
+		f_printf(&sensorFile, "$DATA\n");
+		f_sync(&sensorFile);
 	}
 
-	FS_Log_WriteCommonHeader(&sensorFile);
-	f_printf(&sensorFile, "$COL,BARO,time,pressure,temperature\n");
-	f_printf(&sensorFile, "$UNIT,BARO,s,Pa,deg C\n");
-	f_printf(&sensorFile, "$COL,HUM,time,humidity,temperature\n");
-	f_printf(&sensorFile, "$UNIT,HUM,s,percent,deg C\n");
-	f_printf(&sensorFile, "$COL,MAG,time,x,y,z,temperature\n");
-	f_printf(&sensorFile, "$UNIT,MAG,s,gauss,gauss,gauss,deg C\n");
-	f_printf(&sensorFile, "$COL,IMU,time,wx,wy,wz,ax,ay,az,temperature\n");
-	f_printf(&sensorFile, "$UNIT,IMU,s,deg/s,deg/s,deg/s,g,g,g,deg C\n");
-	f_printf(&sensorFile, "$COL,TIME,time,tow,week\n");
-	f_printf(&sensorFile, "$UNIT,TIME,s,s,\n");
-	f_printf(&sensorFile, "$COL,VBAT,time,voltage\n");
-	f_printf(&sensorFile, "$UNIT,VBAT,s,volt\n");
-	f_printf(&sensorFile, "$DATA\n");
-	f_sync(&sensorFile);
-
-	// Open event log file
-	sprintf(filename, "/temp/%04lu/event.csv", temp_folder);
-	if (f_open(&eventFile, filename, FA_WRITE|FA_CREATE_ALWAYS) != FR_OK)
+	if (enable_flags & FS_LOG_ENABLE_EVENT)
 	{
-		Error_Handler();
-	}
+		// Open event log file
+		sprintf(filename, "/temp/%04lu/event.csv", temp_folder);
+		if (f_open(&eventFile, filename, FA_WRITE|FA_CREATE_ALWAYS) != FR_OK)
+		{
+			Error_Handler();
+		}
 
-	FS_Log_WriteCommonHeader(&eventFile);
-	f_printf(&eventFile, "$COL,EVNT,time,description\n");
-	f_printf(&eventFile, "$UNIT,EVNT,s,\n");
-	f_printf(&eventFile, "$DATA\n");
-	f_sync(&eventFile);
+		FS_Log_WriteCommonHeader(&eventFile);
+		f_printf(&eventFile, "$COL,EVNT,time,description\n");
+		f_printf(&eventFile, "$UNIT,EVNT,s,\n");
+		f_printf(&eventFile, "$DATA\n");
+		f_sync(&eventFile);
+	}
 
 	// Initialize update task
 	UTIL_SEQ_RegTask(1<<CFG_TASK_FS_LOG_UPDATE_ID, UTIL_SEQ_RFU, FS_Log_Update);
@@ -668,38 +727,50 @@ void FS_Log_DeInit(uint32_t temp_folder)
 	// Delete timer
 	HW_TS_Delete(timer_id);
 
-	// Add event log entries for buffer info
-	FS_Log_WriteEvent("----------");
-	FS_Log_WriteEvent("%lu/%lu slots used in $BARO message buffer", baroUsed, BARO_COUNT);
-	FS_Log_WriteEvent("%lu/%lu slots used in $HUM message buffer",  humUsed, HUM_COUNT);
-	FS_Log_WriteEvent("%lu/%lu slots used in $MAG message buffer",  magUsed, MAG_COUNT);
-	FS_Log_WriteEvent("%lu/%lu slots used in $GNSS message buffer", gnssUsed, GNSS_COUNT);
-	FS_Log_WriteEvent("%lu/%lu slots used in $TIME message buffer", timeUsed, TIME_COUNT);
-	FS_Log_WriteEvent("%lu/%lu slots used in $RAW message buffer",  rawUsed, RAW_COUNT);
-	FS_Log_WriteEvent("%lu/%lu slots used in $IMU message buffer",  imuUsed, IMU_COUNT);
-	FS_Log_WriteEvent("%lu/%lu slots used in $VBAT message buffer", vbatUsed, VBAT_COUNT);
+	if (enable_flags & FS_LOG_ENABLE_EVENT)
+	{
+		// Add event log entries for buffer info
+		FS_Log_WriteEvent("----------");
+		FS_Log_WriteEvent("%lu/%lu slots used in $BARO message buffer", baroUsed, BARO_COUNT);
+		FS_Log_WriteEvent("%lu/%lu slots used in $HUM message buffer",  humUsed, HUM_COUNT);
+		FS_Log_WriteEvent("%lu/%lu slots used in $MAG message buffer",  magUsed, MAG_COUNT);
+		FS_Log_WriteEvent("%lu/%lu slots used in $GNSS message buffer", gnssUsed, GNSS_COUNT);
+		FS_Log_WriteEvent("%lu/%lu slots used in $TIME message buffer", timeUsed, TIME_COUNT);
+		FS_Log_WriteEvent("%lu/%lu slots used in $RAW message buffer",  rawUsed, RAW_COUNT);
+		FS_Log_WriteEvent("%lu/%lu slots used in $IMU message buffer",  imuUsed, IMU_COUNT);
+		FS_Log_WriteEvent("%lu/%lu slots used in $VBAT message buffer", vbatUsed, VBAT_COUNT);
 
-	// Add event log entries for timing info
-	FS_Log_WriteEvent("----------");
-	FS_Log_WriteEvent("%lu ms average time spent in log update task",
-			(updateCount > 0) ? (updateTotalTime / updateCount) : 0);
-	FS_Log_WriteEvent("%lu ms maximum time spent in log update task", updateMaxTime);
-	FS_Log_WriteEvent("%lu ms maximum time between calls to log update task", updateMaxInterval);
+		// Add event log entries for timing info
+		FS_Log_WriteEvent("----------");
+		FS_Log_WriteEvent("%lu ms average time spent in log update task",
+				(updateCount > 0) ? (updateTotalTime / updateCount) : 0);
+		FS_Log_WriteEvent("%lu ms maximum time spent in log update task", updateMaxTime);
+		FS_Log_WriteEvent("%lu ms maximum time between calls to log update task", updateMaxInterval);
 
-	FS_Log_WriteEvent("----------");
-	FS_Log_WriteEvent("%lu ms average time spent in log sync task",
-			(syncCount > 0) ? (syncTotalTime / syncCount) : 0);
-	FS_Log_WriteEvent("%lu ms maximum time spent in log sync task", syncMaxTime);
-	FS_Log_WriteEvent("%lu ms maximum time between calls to log sync task", syncMaxInterval);
+		FS_Log_WriteEvent("----------");
+		FS_Log_WriteEvent("%lu ms average time spent in log sync task",
+				(syncCount > 0) ? (syncTotalTime / syncCount) : 0);
+		FS_Log_WriteEvent("%lu ms maximum time spent in log sync task", syncMaxTime);
+		FS_Log_WriteEvent("%lu ms maximum time between calls to log sync task", syncMaxInterval);
+	}
 
 	// Close files
-	if (FS_Config_Get()->enable_raw)
+	if (enable_flags & FS_LOG_ENABLE_RAW)
 	{
 		f_close(&rawFile);
 	}
-	f_close(&gnssFile);
-	f_close(&sensorFile);
-	f_close(&eventFile);
+	if (enable_flags & FS_LOG_ENABLE_GNSS)
+	{
+		f_close(&gnssFile);
+	}
+	if (enable_flags & FS_LOG_ENABLE_SENSOR)
+	{
+		f_close(&sensorFile);
+	}
+	if (enable_flags & FS_LOG_ENABLE_EVENT)
+	{
+		f_close(&eventFile);
+	}
 
 	if (validDateTime)
 	{
@@ -722,20 +793,29 @@ void FS_Log_DeInit(uint32_t temp_folder)
 		sprintf(oldPath, "/temp/%04lu", temp_folder);
 		f_utime(oldPath, &fno);
 
-		sprintf(oldPath, "/temp/%04lu/track.csv", temp_folder);
-		f_utime(oldPath, &fno);
+		if (enable_flags & FS_LOG_ENABLE_GNSS)
+		{
+			sprintf(oldPath, "/temp/%04lu/track.csv", temp_folder);
+			f_utime(oldPath, &fno);
+		}
 
-		if (FS_Config_Get()->enable_raw)
+		if (enable_flags & FS_LOG_ENABLE_RAW)
 		{
 			sprintf(oldPath, "/temp/%04lu/raw.ubx", temp_folder);
 			f_utime(oldPath, &fno);
 		}
 
-		sprintf(oldPath, "/temp/%04lu/sensor.csv", temp_folder);
-		f_utime(oldPath, &fno);
+		if (enable_flags & FS_LOG_ENABLE_SENSOR)
+		{
+			sprintf(oldPath, "/temp/%04lu/sensor.csv", temp_folder);
+			f_utime(oldPath, &fno);
+		}
 
-		sprintf(oldPath, "/temp/%04lu/event.csv", temp_folder);
-		f_utime(oldPath, &fno);
+		if (enable_flags & FS_LOG_ENABLE_EVENT)
+		{
+			sprintf(oldPath, "/temp/%04lu/event.csv", temp_folder);
+			f_utime(oldPath, &fno);
+		}
 
 		// Format date and time
 		sprintf(date, "%02d-%02d-%02d", year % 100, month, day);
@@ -760,6 +840,9 @@ void FS_Log_DeInit(uint32_t temp_folder)
 
 void FS_Log_WriteBaroData(const FS_Baro_Data_t *current)
 {
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+		return;
+
 	if (baroWrI < baroRdI + BARO_COUNT)
 	{
 		// Copy to circular buffer
@@ -781,6 +864,9 @@ void FS_Log_WriteBaroData(const FS_Baro_Data_t *current)
 
 void FS_Log_WriteHumData(const FS_Hum_Data_t *current)
 {
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+		return;
+
 	if (humWrI < humRdI + HUM_COUNT)
 	{
 		// Copy to circular buffer
@@ -802,6 +888,9 @@ void FS_Log_WriteHumData(const FS_Hum_Data_t *current)
 
 void FS_Log_WriteMagData(const FS_Mag_Data_t *current)
 {
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+		return;
+
 	if (magWrI < magRdI + MAG_COUNT)
 	{
 		// Copy to circular buffer
@@ -823,6 +912,9 @@ void FS_Log_WriteMagData(const FS_Mag_Data_t *current)
 
 void FS_Log_WriteGNSSData(const FS_GNSS_Data_t *current)
 {
+	if (!(enable_flags & FS_LOG_ENABLE_GNSS))
+		return;
+
 	if (current->gpsFix == 3)
 	{
 		if (gnssWrI < gnssRdI + GNSS_COUNT)
@@ -857,6 +949,9 @@ void FS_Log_UpdatePath(const FS_GNSS_Data_t *current)
 
 void FS_Log_WriteGNSSTime(const FS_GNSS_Time_t *current)
 {
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+		return;
+
 	if (timeWrI < timeRdI + TIME_COUNT)
 	{
 		// Copy to circular buffer
@@ -878,6 +973,9 @@ void FS_Log_WriteGNSSTime(const FS_GNSS_Time_t *current)
 
 void FS_Log_WriteGNSSRaw(const FS_GNSS_Raw_t *current)
 {
+	if (!(enable_flags & FS_LOG_ENABLE_RAW))
+		return;
+
 	if (FS_Config_Get()->enable_raw)
 	{
 		if (rawWrI < rawRdI + RAW_COUNT)
@@ -902,6 +1000,9 @@ void FS_Log_WriteGNSSRaw(const FS_GNSS_Raw_t *current)
 
 void FS_Log_WriteIMUData(const FS_IMU_Data_t *current)
 {
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+		return;
+
 	if (imuWrI < imuRdI + IMU_COUNT)
 	{
 		// Copy to circular buffer
@@ -923,6 +1024,9 @@ void FS_Log_WriteIMUData(const FS_IMU_Data_t *current)
 
 void FS_Log_WriteVBATData(const FS_VBAT_Data_t *current)
 {
+	if (!(enable_flags & FS_LOG_ENABLE_SENSOR))
+		return;
+
 	if (vbatWrI < vbatRdI + VBAT_COUNT)
 	{
 		// Copy to circular buffer
@@ -950,6 +1054,9 @@ void FS_Log_WriteEvent(const char *format, ...)
 	UINT bw;
 
 	va_list args;
+
+	if (!(enable_flags & FS_LOG_ENABLE_EVENT))
+		return;
 
 	// Write to disk
 	ptr = row + sizeof(row);
