@@ -761,7 +761,7 @@ static void FS_GNSS_InitMessages(void)
 		.flags             = 0x73     // Configuration flags
 	};
 
-	ubxCfgValset_t cfgValset =
+	ubxCfgValset_t cfgEcc =
 	{
 		.version = 0x00,
 		.layers = 0x01,
@@ -771,6 +771,11 @@ static void FS_GNSS_InitMessages(void)
 			UBX_CFG_SEC_ECCFGSESSIONID1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			UBX_CFG_SEC_ECCFGSESSIONID2, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 		}
+	};
+
+	uint8_t cfgL5[] =
+	{
+		0x01, 0x01, 0x00, 0x00, 0x01, 0x00, 0x32, 0x10, 0x01
 	};
 
 	#define SEND_MESSAGE(c,m,d)							\
@@ -800,15 +805,16 @@ static void FS_GNSS_InitMessages(void)
 	// Set session ID
 	for (i = 0; i < 4; ++i)
 	{
-		cfgValset.cfgData[8 + i]  = (state->device_id[0]  >> (8 * i)) & 0xff;
-		cfgValset.cfgData[4 + i]  = (state->device_id[1]  >> (8 * i)) & 0xff;
-		cfgValset.cfgData[20 + i] = (state->device_id[2]  >> (8 * i)) & 0xff;
-		cfgValset.cfgData[16 + i] = (state->session_id[0] >> (8 * i)) & 0xff;
-		cfgValset.cfgData[32 + i] = (state->session_id[1] >> (8 * i)) & 0xff;
-		cfgValset.cfgData[28 + i] = (state->session_id[2] >> (8 * i)) & 0xff;
+		cfgEcc.cfgData[8 + i]  = (state->device_id[0]  >> (8 * i)) & 0xff;
+		cfgEcc.cfgData[4 + i]  = (state->device_id[1]  >> (8 * i)) & 0xff;
+		cfgEcc.cfgData[20 + i] = (state->device_id[2]  >> (8 * i)) & 0xff;
+		cfgEcc.cfgData[16 + i] = (state->session_id[0] >> (8 * i)) & 0xff;
+		cfgEcc.cfgData[32 + i] = (state->session_id[1] >> (8 * i)) & 0xff;
+		cfgEcc.cfgData[28 + i] = (state->session_id[2] >> (8 * i)) & 0xff;
 	}
 
-	SEND_MESSAGE(UBX_CFG, UBX_CFG_VALSET, cfgValset);
+	SEND_MESSAGE(UBX_CFG, UBX_CFG_VALSET, cfgEcc);
+	SEND_MESSAGE(UBX_CFG, UBX_CFG_VALSET, cfgL5);
 
 	#undef SEND_MESSAGE
 }
