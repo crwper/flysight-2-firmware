@@ -32,8 +32,11 @@
 #include "log.h"
 #include "state.h"
 #include "stm32_seq.h"
+#include "rtc_util.h"
 #include "time.h"
 #include "version.h"
+
+extern RTC_HandleTypeDef hrtc;
 
 #define LOG_TIMEOUT     50  // Write timeout
 
@@ -110,8 +113,13 @@ static FIL eventFile;
 
 static uint8_t timer_id;
 
-static bool validDateTime;
-static FS_GNSS_Data_t saved_data;
+static bool     validDateTime;
+static uint16_t saved_year;
+static uint8_t  saved_month;
+static uint8_t  saved_day;
+static uint8_t  saved_hour;
+static uint8_t  saved_min;
+static uint8_t  saved_sec;
 
 static uint32_t updateCount;
 static uint32_t updateTotalTime;
@@ -726,7 +734,33 @@ HAL_StatusTypeDef FS_Log_Init(uint32_t temp_folder, uint8_t flags)
 	vbatWrI = 0;
 	vbatUsed = 0;
 
-	validDateTime = false;
+	// Check if RTC has been previously set by GNSS
+	if (FS_RTC_IsValid())
+	{
+		RTC_TimeTypeDef sTime;
+		RTC_DateTypeDef sDate;
+
+		// Must call GetTime before GetDate to lock shadow registers
+		HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+		HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+		saved_year  = 2000 + sDate.Year;
+		saved_month = sDate.Month;
+		saved_day   = sDate.Date;
+		saved_hour  = sTime.Hours;
+		saved_min   = sTime.Minutes;
+		saved_sec   = sTime.Seconds;
+
+		// Apply timezone offset to get local time for folder naming
+		FS_RTC_AdjustToLocal(&saved_year, &saved_month, &saved_day,
+				&saved_hour, &saved_min, &saved_sec);
+
+		validDateTime = true;
+	}
+	else
+	{
+		validDateTime = false;
+	}
 
 	updateCount = 0;
 	updateTotalTime = 0;
@@ -836,29 +870,10 @@ HAL_StatusTypeDef FS_Log_Init(uint32_t temp_folder, uint8_t flags)
 	return HAL_OK;
 }
 
-static void FS_Log_AdjustDateTime(uint16_t *year, uint8_t *month, uint8_t *day,
-		uint8_t *hour, uint8_t *min, uint8_t *sec)
-{
-	uint32_t timestamp;
-
-	// Convert UTC date/time to a single value, offset it, and convert back
-	timestamp = mk_gmtime(*year, *month, *day, *hour, *min, *sec);
-	timestamp += FS_Config_Get()->tz_offset;
-	gmtime_r(timestamp, year, month, day, hour, min, sec);
-}
-
 void FS_Log_DeInit(uint32_t temp_folder)
 {
-	uint16_t year;
-	uint8_t  month;
-	uint8_t  day;
-	uint8_t  hour;
-	uint8_t  min;
-	uint8_t  sec;
-
 	char date[15], time[15];
 	char oldPath[50];
-    FILINFO fno;
 
 	if (logState == LOG_STATE_ACTIVE)
 	{
@@ -915,37 +930,40 @@ void FS_Log_DeInit(uint32_t temp_folder)
 
 	if ((logState == LOG_STATE_ACTIVE) && validDateTime)
 	{
-		// Get date/time
-		year = saved_data.year;
-		month = saved_data.month;
-		day = saved_data.day;
-		hour = saved_data.hour;
-		min = saved_data.min;
-		sec = saved_data.sec;
+		uint8_t retries;
+		uint8_t try_sec;
 
-		// Adjust using timezone
-		FS_Log_AdjustDateTime(&year, &month, &day, &hour, &min, &sec);
-
-		// Format date and time
-		sprintf(date, "%02d-%02d-%02d", year % 100, month, day);
-		sprintf(time, "%02d-%02d-%02d", hour, min, sec);
+		// Format date from saved local time (timezone already applied at init)
+		sprintf(date, "%02d-%02d-%02d", saved_year % 100, saved_month, saved_day);
+		sprintf(time, "%02d-%02d-%02d", saved_hour, saved_min, saved_sec);
 
 		sprintf(path, "/%s", date);
 		if (f_stat(path, 0) != FR_OK)
 		{
-			// Create new folder
+			// Create date folder
 			f_mkdir(path);
 		}
 
-		// Move temporary folder
+		// Build target path
 		sprintf(oldPath, "/temp/%04lu", temp_folder);
 		sprintf(path, "/%s/%s", date, time);
 
-		// Delete date/time folder if it exists
-		delete_node(path, sizeof(path) / sizeof(path[0]), &fno);
+		// Handle collisions: if target exists, increment seconds and retry
+		retries = 0;
+		try_sec = saved_sec;
+		while (f_stat(path, 0) == FR_OK && retries < 60)
+		{
+			try_sec = (try_sec + 1) % 60;
+			sprintf(time, "%02d-%02d-%02d", saved_hour, saved_min, try_sec);
+			sprintf(path, "/%s/%s", date, time);
+			retries++;
+		}
 
-		// Rename temporary folder
-		f_rename(oldPath, path);
+		if (retries < 60)
+		{
+			// Rename temporary folder to date/time folder
+			f_rename(oldPath, path);
+		}
 	}
 
 	// Return the logging module to its initial state for the next session.
@@ -1048,16 +1066,6 @@ void FS_Log_WriteGNSSData(const FS_GNSS_Data_t *current)
 			// Update buffer statistics
 			gnssUsed = GNSS_COUNT;
 		}
-	}
-}
-
-void FS_Log_UpdatePath(const FS_GNSS_Data_t *current)
-{
-	if ((current->gpsFix == 3) && (!validDateTime))
-	{
-		// Remember date and time
-		memcpy(&saved_data, current, sizeof(FS_GNSS_Data_t));
-		validDateTime = true;
 	}
 }
 
