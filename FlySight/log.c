@@ -33,6 +33,7 @@
 #include "state.h"
 #include "stm32_seq.h"
 #include "rtc_util.h"
+#include "sensor_time.h"
 #include "time.h"
 #include "version.h"
 
@@ -57,7 +58,7 @@ extern RTC_HandleTypeDef hrtc;
 
 typedef struct
 {
-	uint32_t time;
+	uint64_t time;			// us
 	char     message[EVENT_MESSAGE_MAX_LEN];
 } FS_Log_Event_t;
 
@@ -230,7 +231,7 @@ void FS_Log_UpdateHum(void)
 	*(--ptr) = '\n';
 	ptr = writeInt32ToBuf(ptr, data->temperature, 1, 1, '\r');
 	ptr = writeInt32ToBuf(ptr, data->humidity,    1, 1, ',');
-	ptr = writeInt32ToBuf(ptr, data->time,        3, 1, ',');
+	ptr = writeInt64ToBuf(ptr, data->time,        6, 1, ',');
 	*(--ptr) = ',';
 	*(--ptr) = 'M';
 	*(--ptr) = 'U';
@@ -261,7 +262,7 @@ void FS_Log_UpdateBaro(void)
 	*(--ptr) = '\n';
 	ptr = writeInt32ToBuf(ptr, data->temperature, 2, 1, '\r');
 	ptr = writeInt32ToBuf(ptr, data->pressure,    2, 1, ',');
-	ptr = writeInt32ToBuf(ptr, data->time,        3, 1, ',');
+	ptr = writeInt64ToBuf(ptr, data->time,        6, 1, ',');
 	*(--ptr) = ',';
 	*(--ptr) = 'O';
 	*(--ptr) = 'R';
@@ -295,7 +296,7 @@ void FS_Log_UpdateMag(void)
 	ptr = writeInt32ToBuf(ptr, data->z,           3, 1, ',');
 	ptr = writeInt32ToBuf(ptr, data->y,           3, 1, ',');
 	ptr = writeInt32ToBuf(ptr, data->x,           3, 1, ',');
-	ptr = writeInt32ToBuf(ptr, data->time,        3, 1, ',');
+	ptr = writeInt64ToBuf(ptr, data->time,        6, 1, ',');
 	*(--ptr) = ',';
 	*(--ptr) = 'G';
 	*(--ptr) = 'A';
@@ -374,7 +375,7 @@ void FS_Log_UpdateTime(void)
 	*(--ptr) = '\n';
 	ptr = writeInt32ToBuf(ptr, time->week,        0, 0, '\r');
 	ptr = writeInt32ToBuf(ptr, time->towMS,       3, 1, ',');
-	ptr = writeInt32ToBuf(ptr, time->time,        3, 1, ',');
+	ptr = writeInt64ToBuf(ptr, time->time,        6, 1, ',');
 	*(--ptr) = ',';
 	*(--ptr) = 'E';
 	*(--ptr) = 'M';
@@ -430,7 +431,7 @@ void FS_Log_UpdateIMU(void)
 	ptr = writeInt32ToBuf(ptr, data->wz,          3, 1, ',');
 	ptr = writeInt32ToBuf(ptr, data->wy,          3, 1, ',');
 	ptr = writeInt32ToBuf(ptr, data->wx,          3, 1, ',');
-	ptr = writeInt32ToBuf(ptr, data->time,        3, 1, ',');
+	ptr = writeInt64ToBuf(ptr, data->time,        6, 1, ',');
 	*(--ptr) = ',';
 	*(--ptr) = 'U';
 	*(--ptr) = 'M';
@@ -460,7 +461,7 @@ void FS_Log_UpdateVBAT(void)
 
 	*(--ptr) = '\n';
 	ptr = writeInt32ToBuf(ptr, data->voltage, 3, 1, '\r');
-	ptr = writeInt32ToBuf(ptr, data->time,    3, 1, ',');
+	ptr = writeInt64ToBuf(ptr, data->time,    6, 1, ',');
 	*(--ptr) = ',';
 	*(--ptr) = 'T';
 	*(--ptr) = 'A';
@@ -482,7 +483,7 @@ void FS_Log_WriteEventEntry(const FS_Log_Event_t *entry)
 
 	// Write to disk
 	ptr = row + sizeof(row);
-	ptr = writeInt32ToBuf(ptr, entry->time, 3, 1, ',');
+	ptr = writeInt64ToBuf(ptr, entry->time, 6, 1, ',');
 	*(--ptr) = ',';
 	*(--ptr) = 'T';
 	*(--ptr) = 'N';
@@ -1176,7 +1177,7 @@ void FS_Log_WriteEvent(const char *format, ...)
 	if (logState != LOG_STATE_ACTIVE) return;
 	if (!(enable_flags & FS_LOG_ENABLE_EVENT)) return;
 
-	entry.time = HAL_GetTick();
+	entry.time = FS_SensorTime_GetTicks();
 
 	va_start(args, format);
 	vsnprintf(entry.message, EVENT_MESSAGE_MAX_LEN, format, args);
@@ -1198,7 +1199,7 @@ void FS_Log_WriteEventAsync(const char *format, ...)
 		// Copy to circular buffer
 		FS_Log_Event_t *entry = &eventBuf[eventWrI % EVENT_COUNT];
 
-		entry->time = HAL_GetTick();
+		entry->time = FS_SensorTime_GetTicks();
 
 		va_start(args, format);
 		vsnprintf(entry->message, EVENT_MESSAGE_MAX_LEN, format, args);

@@ -36,6 +36,7 @@
 #include "mag.h"
 #include "resource_manager.h"
 #include "sensor.h"
+#include "sensor_time.h"
 #include "state.h"
 #include "vbat.h"
 
@@ -55,6 +56,10 @@ void FS_ActiveMode_Init(void)
 
 	/* Initialize controller */
 	FS_ActiveControl_Init();
+
+	/* Initialize and start microsecond sensor timer */
+	FS_SensorTime_Init();
+	FS_SensorTime_Start();
 
 	/* Initialize configuration */
 	FS_Config_Init();
@@ -284,6 +289,9 @@ void FS_ActiveMode_DeInit(void)
 		// Disable logging
 		FS_Log_DeInit(FS_State_Get()->temp_folder);
 	}
+
+	/* Stop microsecond sensor timer */
+	FS_SensorTime_Stop();
 
 	/* De-initialize FatFS */
 	FS_ResourceManager_ReleaseResource(FS_RESOURCE_FATFS);

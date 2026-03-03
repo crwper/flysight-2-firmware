@@ -1,6 +1,7 @@
 #include "main.h"
 #include "config.h"
 #include "rtc_util.h"
+#include "sensor_time.h"
 #include "time.h"
 
 extern RTC_HandleTypeDef hrtc;
@@ -18,6 +19,7 @@ void FS_RTC_SetFromGNSS(const FS_GNSS_Time_t *gnssTime)
 	uint8_t  sec;
 	uint16_t ms;
 
+	uint64_t offset_us;
 	uint32_t offset_ms;
 	uint32_t ms_total;
 
@@ -37,7 +39,8 @@ void FS_RTC_SetFromGNSS(const FS_GNSS_Time_t *gnssTime)
 	ms = gnssTime->towMS % 1000;
 
 	// Add the offset to milliseconds
-	offset_ms = HAL_GetTick() - gnssTime->time;
+	offset_us = FS_SensorTime_GetTicks() - gnssTime->time;
+	offset_ms = (uint32_t)(offset_us / 1000);
 	ms_total = ms + offset_ms;
 
 	// Calculate new timestamp and milliseconds
