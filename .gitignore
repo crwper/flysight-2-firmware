@@ -13,3 +13,6 @@ Binary/
 
 # Locally stored "Eclipse launch configurations"
 *.launch
+
+# Claude Code files
+.claude/
