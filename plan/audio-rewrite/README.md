@@ -94,7 +94,7 @@ git -C .. show --stat HEAD                            # only the card's allowed 
 
 | Card | Status | Commit |
 | --- | --- | --- |
-| A0-infrastructure | pending | |
+| A0-infrastructure | done | 3e6ecaa |
 | A1-state-struct | pending | |
 | A2-flight-params | pending | |
 | A3-speech-tokens | pending | |
