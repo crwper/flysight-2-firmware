@@ -58,6 +58,13 @@ procedure), `test/scripts/mutation_test.py`, `test/QUIRKS.md`,
 - Cumulative diff feels wholesale (hundreds of changed pitches in one
   scenario is fine if each is ±1; different event SEQUENCES are not).
 
+## Mandatory human review
+
+Do NOT commit this card autonomously. When the classification table is
+complete, STOP and present it (with the full golden diffs available)
+for Michael's review; commit only after his approval. This is the one
+card where a wrong judgment silently becomes the new truth.
+
 ## Commit message
 
     Phase B1: float/SI metrics with double lat/lon

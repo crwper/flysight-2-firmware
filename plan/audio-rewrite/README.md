@@ -25,7 +25,7 @@ Read `BRIEF.md` once yourself so you understand what you are verifying.
    that context. After two failed attempts on the same card, stop and
    escalate to Michael.
 
-## Dispatch prompt (fill in <CARD>)
+## Dispatch prompt (fill in `<CARD>`)
 
 ```text
 You are implementing ONE commit of a carefully planned rewrite of the
@@ -79,6 +79,10 @@ git -C .. show --stat HEAD                            # only the card's allowed 
   unclassified diffs before dispatching the next card.
 
 ## Escalate to Michael (stop the loop) when
+
+- Always at B1: the diff-classification table requires his sign-off
+  before the commit is accepted (see the card's "Mandatory human
+  review" section).
 
 - A Phase A card cannot reach byte-identical without something ugly —
   the choice between faithful-but-ugly and clean-but-different is his.
