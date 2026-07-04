@@ -1,0 +1,35 @@
+; Direction-to-destination PITCH with a wide deadband (Min_Angle 30) but
+; an UNRELATED rate source (Mode_2 9): inside the deadband the pitch stays
+; valid because the tone is still needed for the rate channel (the
+; "mode_2 != DIRECTION" leg of the deadband condition).
+
+Model:     7
+Rate:      200
+
+Mode:      5     ; Direction to destination
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9     ; Change in value 1 (NOT direction)
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Lat:       512503000
+Lon:       -1140620190
+Bearing:   0
+End_Nav:   0
+Max_Dist:  0
+Min_Angle: 30

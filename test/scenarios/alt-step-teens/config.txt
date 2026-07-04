@@ -1,0 +1,32 @@
+; Altitude announcements from a 20,000 ft exit: the 19,000 ft
+; announcement speaks "nineteen" (19.wav), the only value that pins the
+; teens/tens boundary in numberToSpeech at 19.
+; Added after mutation survivor M26: nothing previously spoke 19.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Sp_Volume: 6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+V_Thresh:  1000  ; announcements share this gate (QUIRKS #11), so it must
+                 ; be below terminal; the glide tone runs alongside
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Alt_Units: 1     ; feet
+Alt_Step:  1000

@@ -1,0 +1,30 @@
+; Pins the QUIRKS #8 intent example: descend to EXACTLY the alarm
+; elevation (2000 m), hold there 10 s, continue down -- the alarm must
+; fire exactly ONCE, at the first sample that reaches 2000. The track
+; then climbs back to exactly 2000 and descends again (touch from below,
+; no overshoot): per the half-open interval spec this produces NO second
+; alarm.
+; Expected trace: first-fix beep + exactly one alarm beep at t=13.0.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Sp_Volume: 6
+
+V_Thresh:  10000 ; alarms only
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 0
+Win_Below: 0
+DZ_Elev:   0
+
+Alarm_Elev: 2000
+Alarm_Type: 1

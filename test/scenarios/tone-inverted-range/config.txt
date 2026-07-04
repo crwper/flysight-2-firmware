@@ -1,0 +1,25 @@
+; INVERTED ranges: Min > Max for pitch (high value = low pitch) and
+; Min_Val_2 > Max_Val_2 for rate. Exercises the inverted-orientation legs
+; of the UNDER/OVER macros in setTone.
+
+Model:     7
+Rate:      200
+
+Mode:      2     ; Glide ratio
+Min:       300   ; inverted: Min > Max
+Max:       0
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 1500  ; inverted: Min_Val_2 > Max_Val_2
+Max_Val_2: 300
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1

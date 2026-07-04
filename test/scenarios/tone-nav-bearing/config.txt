@@ -1,0 +1,37 @@
+; DIRECTION TO BEARING tone (Mode 7, bearing 090) with DISTANCE TO
+; DESTINATION as the rate source (Mode_2 6, Max_Dist 3000). Turning-canopy
+; track sweeps the heading through the bearing; End_Nav 300 silences the
+; direction tone below 300 m AGL.
+; Characterizes: tone mode 7 (incl. End_Nav gate and Min_Angle deadband),
+; tone mode 6 as rate source with Max_Dist != 0.
+
+Model:     7
+Rate:      200
+
+Mode:      7     ; Direction to bearing
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    6     ; Distance to destination drives rate
+Min_Val_2: 0
+Max_Val_2: 3000
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Lat:       512503000
+Lon:       -1140620190
+Bearing:   90
+End_Nav:   300
+Max_Dist:  3000
+Min_Angle: 5

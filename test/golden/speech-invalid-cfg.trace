@@ -1,0 +1,90 @@
+# fs-audio-sim v1
+# config=config.txt track=track.csv tail=2.000
+# rtc_tick_ns=488191
+   0.009763  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=0.000
+ 511.204323  PLAY file=horz.wav dur=1.020 vol=10 hmsl=3992.990
+ 512.229524  PLAY file=1.wav dur=0.560 vol=10 hmsl=3976.845
+ 512.795826  PLAY file=2.wav dur=0.480 vol=10 hmsl=3967.967
+ 513.284017  PLAY file=dot.wav dur=0.610 vol=10 hmsl=3952.284
+ 513.899138  PLAY file=2.wav dur=0.480 vol=10 hmsl=3934.011
+ 514.387329  PLAY file=distance.wav dur=0.930 vol=10 hmsl=3920.532
+ 515.324655  PLAY file=2.wav dur=0.480 vol=10 hmsl=3882.915
+ 515.812846  PLAY file=8.wav dur=0.540 vol=10 hmsl=3858.060
+ 516.359620  PLAY file=dot.wav dur=0.610 vol=10 hmsl=3840.693
+ 516.974741  PLAY file=7.wav dur=0.690 vol=10 hmsl=3813.614
+ 517.736319  BEEP f0=379 f1=379 ms=125 vol=10 hmsl=3775.896
+ 518.722465  BEEP f0=373 f1=373 ms=125 vol=10 hmsl=3726.717
+ 519.708610  BEEP f0=369 f1=369 ms=125 vol=10 hmsl=3675.857
+ 520.206565  PLAY file=horz.wav dur=1.020 vol=10 hmsl=3644.736
+ 521.231766  PLAY file=1.wav dur=0.560 vol=10 hmsl=3592.115
+ 521.798068  PLAY file=2.wav dur=0.480 vol=10 hmsl=3570.857
+ 522.286259  PLAY file=dot.wav dur=0.610 vol=10 hmsl=3538.792
+ 522.901380  PLAY file=4.wav dur=0.650 vol=10 hmsl=3506.548
+ 523.555556  PLAY file=distance.wav dur=0.930 vol=10 hmsl=3474.160
+ 524.492882  PLAY file=2.wav dur=0.480 vol=10 hmsl=3419.931
+ 524.981073  PLAY file=7.wav dur=0.690 vol=10 hmsl=3398.171
+ 525.674304  PLAY file=dot.wav dur=0.610 vol=10 hmsl=3354.559
+ 526.289425  PLAY file=3.wav dur=0.560 vol=10 hmsl=3321.786
+ 527.588013  BEEP f0=360 f1=360 ms=125 vol=10 hmsl=3256.117
+ 528.564395  BEEP f0=360 f1=360 ms=125 vol=10 hmsl=3201.303
+ 529.404084  PLAY file=horz.wav dur=1.020 vol=10 hmsl=3146.434
+ 530.429285  PLAY file=1.wav dur=0.560 vol=10 hmsl=3091.525
+ 530.995586  PLAY file=2.wav dur=0.480 vol=10 hmsl=3069.553
+ 531.483777  PLAY file=dot.wav dur=0.610 vol=10 hmsl=3036.589
+ 532.098898  PLAY file=8.wav dur=0.540 vol=10 hmsl=3003.618
+ 532.645672  PLAY file=distance.wav dur=0.930 vol=10 hmsl=2970.641
+ 533.582999  PLAY file=2.wav dur=0.480 vol=10 hmsl=2926.665
+ 534.071190  PLAY file=6.wav dur=0.740 vol=10 hmsl=2893.679
+ 534.813240  PLAY file=dot.wav dur=0.610 vol=10 hmsl=2849.694
+ 535.428361  PLAY file=0.wav dur=0.600 vol=10 hmsl=2816.702
+ 536.443798  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=2761.713
+ 537.429944  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=2706.721
+ 538.416090  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=2651.726
+ 538.601602  PLAY file=horz.wav dur=1.020 vol=10 hmsl=2640.727
+ 539.626803  PLAY file=1.wav dur=0.560 vol=10 hmsl=2585.730
+ 540.193105  PLAY file=3.wav dur=0.560 vol=10 hmsl=2563.731
+ 540.759406  PLAY file=dot.wav dur=0.610 vol=10 hmsl=2530.732
+ 541.374527  PLAY file=1.wav dur=0.560 vol=10 hmsl=2497.734
+ 541.940829  PLAY file=distance.wav dur=0.930 vol=10 hmsl=2464.734
+ 542.878155  PLAY file=2.wav dur=0.480 vol=10 hmsl=2409.735
+ 543.366346  PLAY file=4.wav dur=0.650 vol=10 hmsl=2387.736
+ 544.020522  PLAY file=dot.wav dur=0.610 vol=10 hmsl=2343.736
+ 544.635643  PLAY file=6.wav dur=0.740 vol=10 hmsl=2310.737
+ 546.285729  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=2222.737
+ 547.271874  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=2167.738
+ 547.808884  PLAY file=horz.wav dur=1.020 vol=10 hmsl=2134.738
+ 548.834086  PLAY file=1.wav dur=0.560 vol=10 hmsl=2079.738
+ 549.400387  PLAY file=3.wav dur=0.560 vol=10 hmsl=2046.738
+ 549.966689  PLAY file=dot.wav dur=0.610 vol=10 hmsl=2024.738
+ 550.581809  PLAY file=5.wav dur=0.680 vol=10 hmsl=1991.738
+ 551.265277  PLAY file=distance.wav dur=0.930 vol=10 hmsl=1947.738
+ 552.202603  PLAY file=2.wav dur=0.480 vol=10 hmsl=1892.738
+ 552.690794  PLAY file=3.wav dur=0.560 vol=10 hmsl=1870.738
+ 553.257096  PLAY file=dot.wav dur=0.610 vol=10 hmsl=1837.738
+ 553.872217  PLAY file=2.wav dur=0.480 vol=10 hmsl=1804.738
+ 555.151277  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=1738.738
+ 556.127659  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=1683.738
+ 557.006403  PLAY file=horz.wav dur=1.020 vol=10 hmsl=1628.738
+ 558.031604  PLAY file=1.wav dur=0.560 vol=10 hmsl=1573.738
+ 558.597906  PLAY file=3.wav dur=0.560 vol=10 hmsl=1551.738
+ 559.164207  PLAY file=dot.wav dur=0.610 vol=10 hmsl=1518.738
+ 559.779328  PLAY file=8.wav dur=0.540 vol=10 hmsl=1485.738
+ 560.326102  PLAY file=distance.wav dur=0.930 vol=10 hmsl=1452.738
+ 561.263428  PLAY file=2.wav dur=0.480 vol=10 hmsl=1397.738
+ 561.751619  PLAY file=1.wav dur=0.560 vol=10 hmsl=1375.738
+ 562.317921  PLAY file=dot.wav dur=0.610 vol=10 hmsl=1342.738
+ 562.933042  PLAY file=8.wav dur=0.540 vol=10 hmsl=1309.738
+ 564.007062  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=1243.738
+ 564.993208  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=1199.738
+ 565.979353  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=1144.738
+ 566.106283  PLAY file=horz.wav dur=1.020 vol=10 hmsl=1133.738
+ 567.131484  PLAY file=1.wav dur=0.560 vol=10 hmsl=1078.738
+ 567.697786  PLAY file=4.wav dur=0.650 vol=10 hmsl=1045.738
+ 568.351962  PLAY file=dot.wav dur=0.610 vol=10 hmsl=1012.738
+ 568.967082  PLAY file=2.wav dur=0.480 vol=10 hmsl=979.000
+ 569.455273  PLAY file=distance.wav dur=0.930 vol=10 hmsl=951.250
+ 570.392600  PLAY file=2.wav dur=0.480 vol=10 hmsl=921.250
+ 570.880791  PLAY file=0.wav dur=0.600 vol=10 hmsl=904.000
+ 571.486148  PLAY file=dot.wav dur=0.610 vol=10 hmsl=891.250
+ 572.101269  PLAY file=5.wav dur=0.680 vol=10 hmsl=883.000
+ 760.200000  END

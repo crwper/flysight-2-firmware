@@ -1,0 +1,31 @@
+# fs-audio-sim v1
+# config=config.txt track=track.csv tail=2.000
+# rtc_tick_ns=488191
+   0.009763  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=-200.000
+   3.007256  PLAY file=directn.wav dur=0.800 vol=10 hmsl=-200.000
+   3.807889  PLAY file=0.wav dur=0.600 vol=10 hmsl=-200.000
+   6.004749  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=-200.000
+   6.756563  PLAY file=4.wav dur=0.650 vol=10 hmsl=-200.000
+   7.410739  PLAY file=5.wav dur=0.680 vol=10 hmsl=-200.000
+   8.094206  PLAY file=right.wav dur=0.700 vol=10 hmsl=-200.000
+   9.002242  PLAY file=directn.wav dur=0.800 vol=10 hmsl=-200.000
+   9.802875  PLAY file=0.wav dur=0.600 vol=10 hmsl=-200.000
+  12.009498  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=-200.000
+  12.761312  PLAY file=4.wav dur=0.650 vol=10 hmsl=-200.000
+  13.415488  PLAY file=5.wav dur=0.680 vol=10 hmsl=-200.000
+  14.098956  PLAY file=right.wav dur=0.700 vol=10 hmsl=-200.000
+  15.006991  PLAY file=directn.wav dur=0.800 vol=10 hmsl=-200.000
+  15.807624  PLAY file=0.wav dur=0.600 vol=10 hmsl=-200.000
+  18.004484  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=-200.000
+  18.756298  PLAY file=4.wav dur=0.650 vol=10 hmsl=-200.000
+  19.410474  PLAY file=5.wav dur=0.680 vol=10 hmsl=-200.000
+  20.093941  PLAY file=right.wav dur=0.700 vol=10 hmsl=-200.000
+  21.001976  PLAY file=directn.wav dur=0.800 vol=10 hmsl=-200.000
+  21.802610  PLAY file=0.wav dur=0.600 vol=10 hmsl=-200.000
+  24.009233  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=-200.000
+  24.761047  PLAY file=4.wav dur=0.650 vol=10 hmsl=-200.000
+  25.415223  PLAY file=5.wav dur=0.680 vol=10 hmsl=-200.000
+  26.098690  PLAY file=right.wav dur=0.700 vol=10 hmsl=-200.000
+  27.006726  PLAY file=directn.wav dur=0.800 vol=10 hmsl=-200.000
+  27.807359  PLAY file=0.wav dur=0.600 vol=10 hmsl=-200.000
+  31.800000  END

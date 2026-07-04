@@ -1,0 +1,33 @@
+; Direction-to-bearing as pitch and rate with Min_Angle 0: when the
+; turning canopy's heading passes EXACTLY through the bearing (integer
+; degrees), |tVal| > 0 is false and the min_angle == 0 leg of the
+; deadband condition decides.
+
+Model:     7
+Rate:      200
+
+Mode:      7     ; Direction to bearing
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    7
+Min_Val_2: 0
+Max_Val_2: 180
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Bearing:   90
+End_Nav:   0
+Max_Dist:  0
+Min_Angle: 0

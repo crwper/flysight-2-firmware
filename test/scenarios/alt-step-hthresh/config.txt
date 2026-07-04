@@ -1,0 +1,30 @@
+; Altitude mode with H_Thresh 20 m/s: freefall ground speed (~15 m/s)
+; never reaches it, so every step announcement is suppressed by the
+; horizontal-speed gate even though vertical speed qualifies.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Volume: 6
+
+V_Thresh:  1000
+H_Thresh:  2000  ; cm/s -- freefall hspeed (1500) stays below
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Alt_Units: 1
+Alt_Step:  1000

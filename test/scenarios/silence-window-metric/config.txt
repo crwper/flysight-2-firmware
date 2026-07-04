@@ -1,0 +1,43 @@
+; Two silence windows with altitude mode in METERS (Alt_Step 250) and the
+; glide tone running.
+; Characterizes: Win_Top/Win_Bottom tone suppression, suppress_alt
+; (altitude announcements silenced inside a window: the 2750 m and 2500 m
+; steps fall inside window 1), meters step size and meters.wav, the tens
+; token in numberToSpeech (e.g. 3750 -> "3 thousand 7 hundred 50"), and
+; the ground-elevation announcement in meters at first fix.
+; Window 2 (900..1200 m) is crossed under canopy with the tone active
+; (V_Thresh 300 < canopy descent rate).
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+Sp_Volume: 6
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Alt_Units: 0     ; meters
+Alt_Step:  250
+
+Win_Top:    3000 ; silence window 1 (freefall)
+Win_Bottom: 2500
+
+Win_Top:    1200 ; silence window 2 (canopy)
+Win_Bottom: 900

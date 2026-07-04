@@ -1,0 +1,35 @@
+; SAS table edges: the track starts 200 m BELOW sea level (hMSL < 0,
+; bottom clamp) and climbs to ~11.6 km MSL (above the table top,
+; 11,534 m). getValues runs on every fixed sample regardless of speed, so
+; both clamps are exercised; audible tones only during freefall
+; (V_Thresh 2500 keeps the long climb silent).
+; Characterizes: sas_table bottom/top clamps in the tone path.
+
+Model:     7
+Rate:      200
+
+Mode:      0     ; Horizontal speed
+Min:       0
+Max:       8000
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   5     ; speech in freefall above 11.5 km: SAS top clamp in speech path
+Sp_Volume: 6
+
+Sp_Mode:   1
+Sp_Units:  1
+Sp_Dec:    0
+
+V_Thresh:  2500
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   -200

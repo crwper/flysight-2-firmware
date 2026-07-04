@@ -1,0 +1,38 @@
+; Three rotating speech values: inverse glide, total speed (km/h), dive
+; angle (0 decimals).
+; Characterizes: speech modes 3/4/11 with labels (iglide/speed/dive wavs).
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   3
+Sp_Volume: 6
+
+Sp_Mode:   3     ; inverse glide ratio
+Sp_Units:  1
+Sp_Dec:    1
+
+Sp_Mode:   4     ; total speed
+Sp_Units:  0     ; km/h
+Sp_Dec:    1
+
+Sp_Mode:   11    ; dive angle
+Sp_Units:  1
+Sp_Dec:    0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1

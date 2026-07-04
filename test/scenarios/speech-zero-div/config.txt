@@ -1,0 +1,36 @@
+; Glide and inverse-glide speech on a stationary ground track with
+; V_Thresh 0: velD == 0 (glide) and gSpeed == 0 (inverse glide) take the
+; "no value" fallback -- the label plays with an empty value.
+; Characterizes: the division-guard branches in speakValue and what they
+; actually sound like.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   2
+Sp_Volume: 6
+
+Sp_Mode:   2     ; glide ratio
+Sp_Units:  1
+Sp_Dec:    2
+
+Sp_Mode:   3     ; inverse glide ratio
+Sp_Units:  1
+Sp_Dec:    1
+
+V_Thresh:  0
+H_Thresh:  0
+
+Use_SAS:   1

@@ -1,0 +1,35 @@
+; Mode_2 7 recalculation (Mode != 7) on a due-NORTH track with Bearing 0:
+; the raw-heading scaling bug (QUIRKS #16) makes the recalculated relative
+; bearing hugely negative for ANY nonzero heading; only heading exactly
+; 000.00000 deg (velE == 0) yields a non-negative value. This pins the
+; heading == 0 edge alongside tone-vert-bearing-rate's always-negative
+; case.
+
+Model:     7
+Rate:      200
+
+Mode:      1     ; Vertical speed
+Min:       0
+Max:       6000
+Limits:    1
+Volume:    6
+
+Mode_2:    7     ; Direction to bearing drives rate (recalculated)
+Min_Val_2: 0
+Max_Val_2: 180
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Bearing:   0
+End_Nav:   0
+Max_Dist:  0
+Min_Angle: 5

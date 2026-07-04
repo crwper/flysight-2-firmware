@@ -1,0 +1,34 @@
+; Three altitude alarms crossed in freefall; tones disabled via V_Thresh
+; so the trace isolates alarm behaviour.
+; Characterizes: alarm crossing detection, alarm types 1/3/4, exact firing
+; sample. At terminal (~55 m/s) the alarms are ~5.5 s apart.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Sp_Volume: 6     ; used by Alarm_Type 4 (play file)
+
+V_Thresh:  10000 ; unreachable: no tones
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 0
+Win_Below: 0
+DZ_Elev:   0
+
+Alarm_Elev: 1700 ; m AGL
+Alarm_Type: 1    ; beep
+
+Alarm_Elev: 1400
+Alarm_Type: 3    ; chirp down
+
+Alarm_Elev: 1100
+Alarm_Type: 4    ; play file
+Alarm_File: base

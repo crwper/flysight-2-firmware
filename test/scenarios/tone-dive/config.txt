@@ -1,0 +1,26 @@
+; DIVE ANGLE tone (Mode 11) with dive angle as its own rate source
+; (Mode_2 11). Freefall dive angle ~74 deg (over Max), canopy ~27 deg
+; (in range).
+; Characterizes: tone mode 11 (atan2 path) as value and rate.
+
+Model:     7
+Rate:      200
+
+Mode:      11    ; Dive angle
+Min:       20    ; degrees
+Max:       80
+Limits:    1
+Volume:    6
+
+Mode_2:    11
+Min_Val_2: 20
+Max_Val_2: 80
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1

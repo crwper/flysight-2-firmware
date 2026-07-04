@@ -1,0 +1,44 @@
+; Spoken ALTITUDE (Sp_Mode 12, meters, nearest 10 m) rotating with
+; vertical speed. Below 1500 m AGL the altitude entry is skipped and the
+; rotation moves on to vertical speed.
+; Characterizes: speech mode 12 (value, 'm' suffix, alt.wav label, the
+; ALT_MIN rotation skip), FLAG_SAY_ALTITUDE set by a mode-12 speech entry
+; (ground elevation announced in meters at first fix).
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   4
+Sp_Volume: 6
+
+Sp_Mode:   12    ; altitude
+Sp_Units:  0     ; meters
+Sp_Dec:    10    ; altitude step: nearest 10 m
+
+Sp_Mode:   1     ; vertical speed
+Sp_Units:  1
+Sp_Dec:    0
+
+Sp_Mode:   12    ; altitude again, in FEET (nearest 100 ft)
+Sp_Units:  1
+Sp_Dec:    100
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+Alt_Units: 0     ; first-fix announcement in meters
+DZ_Elev:   0

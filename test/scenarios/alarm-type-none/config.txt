@@ -1,0 +1,37 @@
+; An alarm with Alarm_Type 0 ("no alarm") crossed while chatty speech is
+; running: the type switch plays nothing, but the crossing STILL cancels
+; queued speech (*speech_ptr = '\0' runs after the switch).
+; Characterizes: the type-0/default leg of the alarm switch and its
+; silent speech-cancel side effect.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   1
+Sp_Volume: 6
+
+Sp_Mode:   1
+Sp_Units:  1
+Sp_Dec:    0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Alarm_Elev: 2000
+Alarm_Type: 0    ; no alarm

@@ -1,0 +1,32 @@
+; Ground track at hMSL -200 m with DZ_Elev -55: altitude AGL is -145 m,
+; so the first-fix announcement speaks a NEGATIVE number ("minus 1
+; hundred 45 meters" -- covers the minus, hundreds, and tens-with-
+; remainder paths of numberToSpeech). Vertical-speed speech with
+; V_Thresh 0 also runs at hMSL < 0, covering the SAS bottom clamp in the
+; speech path.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Sp_Rate:   5
+Sp_Volume: 6
+
+Sp_Mode:   1     ; vertical speed
+Sp_Units:  1
+Sp_Dec:    0
+
+V_Thresh:  0
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   -55
+
+Alt_Units: 0     ; meters
+Alt_Step:  1000

@@ -1,0 +1,34 @@
+; A single speech value that is ALTITUDE only: below 1500 m AGL the
+; rotation loop finds no eligible entry and falls through (nothing is
+; spoken for the rest of the jump).
+; Characterizes: the all-entries-skipped leg of the speech rotation.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   3
+Sp_Volume: 6
+
+Sp_Mode:   12    ; altitude only
+Sp_Units:  1
+Sp_Dec:    100
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+Alt_Units: 1

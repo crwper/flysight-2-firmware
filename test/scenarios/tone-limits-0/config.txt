@@ -1,0 +1,26 @@
+; Limits 0 (no tone outside bounds) on a VERTICAL SPEED tone with a narrow
+; Min/Max band (40..50 m/s): silent below 40 m/s (early freefall), pitch
+; sweep 40->50, silent again at terminal (~55 m/s).
+; Characterizes: tone mode 1, Limits 0 under- and over-range silencing.
+
+Model:     7
+Rate:      200
+
+Mode:      1     ; Vertical speed
+Min:       4000  ; cm/s
+Max:       5000
+Limits:    0     ; no tone outside bounds
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1

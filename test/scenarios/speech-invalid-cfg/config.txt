@@ -1,0 +1,48 @@
+; Misconfigured speech values a user could typo: Sp_Units 3 (out of
+; range) on a speed and a distance, and Sp_Mode 8 (not a speech mode).
+; Characterizes the fallback behaviour: unknown units leave the value in
+; base units with NO unit wav; unknown mode produces an empty value.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   3
+Sp_Volume: 6
+
+Sp_Mode:   0     ; horizontal speed
+Sp_Units:  3     ; INVALID units
+Sp_Dec:    1
+
+Sp_Mode:   6     ; distance to destination
+Sp_Units:  3     ; INVALID units
+Sp_Dec:    1
+
+Sp_Mode:   8     ; INVALID speech mode
+Sp_Units:  1
+Sp_Dec:    1
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Lat:       512503000
+Lon:       -1140620190
+Bearing:   0
+End_Nav:   0
+Max_Dist:  0
+Min_Angle: 5

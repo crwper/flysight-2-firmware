@@ -1,0 +1,25 @@
+; Baseline: stock-like glide-ratio tone, no speech, no alarms.
+; Characterizes: tone pitch/rate mapping, V_Thresh gating, SAS.
+
+Model:     7
+Rate:      200
+
+Mode:      2     ; Glide ratio
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9     ; Change in value 1
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+Flatline:  0
+
+Sp_Rate:   0     ; no speech
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1

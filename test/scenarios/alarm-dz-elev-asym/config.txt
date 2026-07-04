@@ -1,0 +1,38 @@
+; Alarms at a REAL dropzone elevation (DZ_Elev 700 m, track ground at
+; 700 m MSL) with an ASYMMETRIC alarm window (+150/-30 m).
+; Added after mutation survivors M03/M04: no previous alarm scenario used
+; a nonzero DZ_Elev (dropping the dz offset from alarm elevations went
+; undetected) or an asymmetric window (swapping above/below went
+; undetected).
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Volume: 6
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 150
+Win_Below: 30
+DZ_Elev:   700
+
+Alarm_Elev: 1700 ; m AGL = 2400 m MSL
+Alarm_Type: 1
+
+Alarm_Elev: 1100 ; m AGL = 1800 m MSL
+Alarm_Type: 3

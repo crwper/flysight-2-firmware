@@ -1,0 +1,26 @@
+; GNSS fix drops out for 5 s in mid-freefall (t=515..520): tones must
+; stop immediately on the first no-fix sample and resume on refix; the
+; first-fix beep must NOT repeat (FLAG_BEEP_DONE).
+; Characterizes: the no-fix path in producerTask after audio is active.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1

@@ -1,0 +1,9 @@
+# fs-audio-sim v1
+# config=config.txt track=track.csv tail=2.000
+# rtc_tick_ns=488191
+   0.009763  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=2100.000
+   3.000000  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=2000.000
+   4.000000  BEEP f0=1760 f1=220 ms=125 vol=10 hmsl=1950.000
+   7.200000  BEEP f0=1760 f1=220 ms=125 vol=10 hmsl=1960.000
+   8.200000  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=2010.000
+  12.600000  END

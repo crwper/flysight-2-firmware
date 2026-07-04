@@ -1,0 +1,27 @@
+; INVERSE GLIDE RATIO tone with MAGNITUDE OF VALUE 1 as the rate source
+; (Mode_2 8), plus an H_Thresh gate: freefall (15 m/s ground speed) is
+; above H_Thresh 12 m/s so the tone runs; canopy (10 m/s) is below, so
+; the tone stops under canopy even though V_Thresh is satisfied.
+; Characterizes: tone mode 3, Mode_2 8, H_Thresh gating.
+
+Model:     7
+Rate:      200
+
+Mode:      3     ; Inverse glide ratio
+Min:       0     ; ratio * 100
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    8     ; Magnitude of value 1
+Min_Val_2: 0
+Max_Val_2: 300
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  300
+H_Thresh:  1200  ; cm/s: freefall (1500) passes, canopy (1000) blocked
+
+Use_SAS:   1

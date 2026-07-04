@@ -1,0 +1,39 @@
+; Three rotating speech values: horizontal speed (km/h), vertical speed
+; (knots), glide ratio (2 decimals).
+; Characterizes: speech rotation with labels (horz/vert/glide wavs),
+; Sp_Units 0 and 2 for speeds, Sp_Dec 2 truncation.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   3
+Sp_Volume: 6
+
+Sp_Mode:   0     ; horizontal speed
+Sp_Units:  0     ; km/h
+Sp_Dec:    1
+
+Sp_Mode:   1     ; vertical speed
+Sp_Units:  2     ; knots
+Sp_Dec:    1
+
+Sp_Mode:   2     ; glide ratio
+Sp_Units:  1
+Sp_Dec:    2
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1

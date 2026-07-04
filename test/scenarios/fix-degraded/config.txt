@@ -1,0 +1,27 @@
+; GNSS degrades to a 2D fix (gpsFix 2) for 5 s in mid-freefall: the
+; producer requires gpsFix == 3, so a 2D fix must behave exactly like no
+; fix (tones stop, no first-fix re-beep on recovery).
+; Added after mutation survivor M12: no track contained gpsFix 2, so
+; "accept 2D fix" went undetected.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1

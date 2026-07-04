@@ -1,0 +1,38 @@
+; Direction speech while BELOW the DZ elevation (ground at hMSL -200,
+; DZ_Elev 0) with End_Nav 0: the altitude gate's first condition
+; (hMSL > End_Nav + DZ_Elev) is false, so the End_Nav == 0 fallback leg
+; decides -- and speech proceeds.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Sp_Rate:   3
+Sp_Volume: 6
+
+Sp_Mode:   5     ; direction to destination
+Sp_Units:  1
+Sp_Dec:    0
+
+Sp_Mode:   7     ; direction to bearing
+Sp_Units:  1
+Sp_Dec:    0
+
+V_Thresh:  0
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Lat:       512503000
+Lon:       -1140620190
+Bearing:   45
+End_Nav:   0
+Max_Dist:  0
+Min_Angle: 5

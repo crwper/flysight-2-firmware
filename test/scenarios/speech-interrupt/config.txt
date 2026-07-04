@@ -1,0 +1,41 @@
+; The common real-world STOP case: tightly spaced speech (Sp_Rate 1) is
+; almost always mid-word when the jumper enters the alarm window at
+; 1850 m, so window entry STOPs the speech; the type-4 alarm at 1800 m
+; then plays into silence.
+; Characterizes: STOP cutting speech at suppression-window entry, alarm
+; audible in the cleared window, speech resuming below the window.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   1     ; speak every second
+Sp_Volume: 6
+
+Sp_Mode:   1     ; vertical speed
+Sp_Units:  1     ; mph
+Sp_Dec:    0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 50
+Win_Below: 50
+DZ_Elev:   0
+
+Alarm_Elev: 1800
+Alarm_Type: 4
+Alarm_File: base

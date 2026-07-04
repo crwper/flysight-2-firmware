@@ -1,0 +1,38 @@
+; Periodic speech (vertical speed, mph) with a glide-ratio tone and one
+; play-file alarm in the middle of freefall.
+; Characterizes: speech scheduling (Sp_Rate), speech/tone interleaving,
+; and what happens when an alarm fires while speech may be playing.
+
+Model:     7
+Rate:      200
+
+Mode:      2     ; Glide ratio tone
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+Flatline:  0
+
+Sp_Rate:   5     ; speak every 5 s
+Sp_Volume: 6
+
+Sp_Mode:   1     ; vertical speed
+Sp_Units:  1     ; mph
+Sp_Dec:    0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Alarm_Elev: 1500
+Alarm_Type: 4    ; play file
+Alarm_File: flare

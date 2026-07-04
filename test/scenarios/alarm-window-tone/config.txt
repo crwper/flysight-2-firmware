@@ -1,0 +1,36 @@
+; A chirp-up alarm (type 2) with a +/-100 m alarm window while the glide
+; tone is running.
+; Characterizes: alarm type 2, Win_Above/Win_Below tone suppression around
+; the alarm elevation (tone silenced inside 2500..2700 m AGL, STOP if a
+; beep is mid-flight when entering), tone resuming below the window, and
+; the same suppression zone crossed twice (climb and freefall).
+
+Model:     7
+Rate:      200
+
+Mode:      2     ; Glide ratio
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+Flatline:  0
+
+Sp_Rate:   0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 100
+Win_Below: 100
+DZ_Elev:   0
+
+Alarm_Elev: 2600
+Alarm_Type: 2    ; chirp up

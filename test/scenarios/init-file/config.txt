@@ -1,0 +1,21 @@
+; Init_Mode 2: play a named file (base.wav) at power-on, on a ground-only
+; track.
+; Characterizes: Init_Mode 2 path in FS_AudioControl_Init and the '/'
+; raw-filename token in the speech consumer.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Sp_Volume: 6
+
+V_Thresh:  10000
+H_Thresh:  0
+
+Init_Mode: 2
+Init_File: base

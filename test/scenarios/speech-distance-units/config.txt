@@ -1,0 +1,43 @@
+; Distance-to-destination speech in FEET (-> miles.wav) and NM
+; (-> knots.wav), rotating.
+; Characterizes: mode 6 speech unit conversions and unit wavs 'i'/'n'.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   3
+Sp_Volume: 6
+
+Sp_Mode:   6     ; distance to destination
+Sp_Units:  1     ; feet units group -> miles
+Sp_Dec:    1
+
+Sp_Mode:   6
+Sp_Units:  2     ; NM
+Sp_Dec:    1
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Lat:       512503000
+Lon:       -1140620190
+Bearing:   0
+End_Nav:   0
+Max_Dist:  0
+Min_Angle: 5

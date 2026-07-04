@@ -1,0 +1,29 @@
+; Limits 2 (chirp up/down at the bounds) on a HORIZONTAL SPEED tone.
+; V_Thresh 500 (5 m/s) so the tone also runs during the climb: the
+; aircraft's 40 m/s ground speed is OVER the 20..30 m/s band (chirp one
+; way), freefall's ~15 m/s (SAS-scaled higher with altitude) is UNDER
+; (chirp the other way).
+; Characterizes: tone mode 0, Limits 2 both sides, SAS scaling of
+; horizontal speed.
+
+Model:     7
+Rate:      200
+
+Mode:      0     ; Horizontal speed
+Min:       2000  ; cm/s
+Max:       3000
+Limits:    2     ; chirp up/down
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  500
+H_Thresh:  0
+
+Use_SAS:   1

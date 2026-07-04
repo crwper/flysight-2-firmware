@@ -1,0 +1,37 @@
+; DISTANCE TO DESTINATION tone (Mode 6) as both value and rate, with
+; Max_Dist 0 (default 10 km range). Pitch rises as the turning canopy
+; closes on the waypoint; beyond 10 km the value clamps to the lowest
+; pitch.
+; Characterizes: tone mode 6 with the Max_Dist == 0 default range, the
+; beyond-range clamp, distance as rate source.
+
+Model:     7
+Rate:      200
+
+Mode:      6     ; Distance to destination
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    6
+Min_Val_2: 0
+Max_Val_2: 10000
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Lat:       512503000
+Lon:       -1140620190
+Bearing:   0
+End_Nav:   0
+Max_Dist:  0     ; use default 10 km range
+Min_Angle: 5

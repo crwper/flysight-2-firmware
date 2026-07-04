@@ -1,0 +1,47 @@
+; Direction speech with Max_Dist 3000 and End_Nav 0: far from the
+; waypoint (whole climb) the mode-5 speech is range-gated (the
+; "dist >= Max_Dist with Max_Dist != 0" skip leg); near the waypoint it
+; speaks (dist < Max_Dist true leg). End_Nav 0 exercises the
+; "end_nav == 0" legs of the altitude gates in modes 5 and 7.
+; NOTE: while gated, the uninitialized-tVal bug (QUIRKS #13) decides the
+; left/right suffix from stack garbage.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   3
+Sp_Volume: 6
+
+Sp_Mode:   5     ; direction to destination
+Sp_Units:  1
+Sp_Dec:    0
+
+Sp_Mode:   7     ; direction to bearing
+Sp_Units:  1
+Sp_Dec:    0
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Lat:       512503000
+Lon:       -1140620190
+Bearing:   45
+End_Nav:   0
+Max_Dist:  3000
+Min_Angle: 5

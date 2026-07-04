@@ -1,0 +1,17 @@
+# fs-audio-sim v1
+# config=config.txt track=track.csv tail=2.000
+# rtc_tick_ns=488191
+   0.009763  PLAY file=0.wav dur=0.600 vol=10 hmsl=0.000
+   0.615120  PLAY file=1.wav dur=0.560 vol=10 hmsl=0.000
+   1.181422  PLAY file=2.wav dur=0.480 vol=10 hmsl=0.000
+   1.669613  PLAY file=3.wav dur=0.560 vol=10 hmsl=0.000
+   2.235914  PLAY file=4.wav dur=0.650 vol=10 hmsl=0.000
+   2.890090  PLAY file=5.wav dur=0.680 vol=10 hmsl=0.000
+   3.573558  PLAY file=6.wav dur=0.740 vol=10 hmsl=0.000
+   4.315608  PLAY file=7.wav dur=0.690 vol=10 hmsl=0.000
+   5.008839  PLAY file=8.wav dur=0.540 vol=10 hmsl=0.000
+   5.555613  PLAY file=9.wav dur=0.660 vol=10 hmsl=0.000
+   6.219553  PLAY file=dot.wav dur=0.610 vol=10 hmsl=0.000
+   6.834674  PLAY file=minus.wav dur=0.890 vol=10 hmsl=0.000
+   7.732945  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=0.000
+  24.800000  END

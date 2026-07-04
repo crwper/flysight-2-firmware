@@ -1,0 +1,34 @@
+; An alarm placed exactly on an Alt_Step boundary (3000 m, steps every
+; 1000 m): when both cross on the same sample the alarm fires and the
+; step announcement is suppressed (the "i == num_alarms" leg).
+; Characterizes: alarm-vs-altitude-mode precedence at a shared elevation.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Volume: 6
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Alt_Units: 0     ; meters
+Alt_Step:  1000
+
+Alarm_Elev: 3000
+Alarm_Type: 1

@@ -1,0 +1,26 @@
+; Altitude mode with a vAcc ramp: the track reports vAcc 30 m for the
+; first 20 s (fix from t=2), then 2 m. The ground-elevation announcement
+; must wait for FLAG_VERTICAL_ACC (vAcc < 10 m), not just the fix.
+; Characterizes: the vertical-accuracy gate on the first-fix altitude
+; announcement, and the producer's FLAG_VERTICAL_ACC clear path.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Sp_Volume: 6
+
+V_Thresh:  10000
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Alt_Units: 1     ; feet
+Alt_Step:  1000

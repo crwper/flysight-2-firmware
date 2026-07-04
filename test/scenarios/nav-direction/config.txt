@@ -1,0 +1,41 @@
+; Direction-to-destination tones (Mode 5 pitch + Mode_2 5 rate) with a
+; turning canopy (track generated with --canopy-turn 3, so the relative
+; bearing sweeps through all angles every 120 s).
+; The waypoint sits ~2 km north of the deployment point, directly on the
+; northbound climb path, ~23 km from the start:
+;   - Max_Dist 3000 keeps the tone silent until the last ~2 s of the climb
+;   - freefall flies straight at the waypoint -> inside the Min_Angle 10
+;     deadband -> silent
+;   - under canopy the sweep alternates tone (off-heading) and deadband
+;     silence, left and right of the target
+; Characterizes: nav value mapping, Min_Angle deadband, Max_Dist gate,
+; cube-law rate shaping for Mode_2 5.
+
+Model:     7
+Rate:      200
+
+Mode:      5     ; Direction to destination
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    5     ; rate also from direction
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  300   ; canopy descent (5 m/s) must stay above this
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Lat:       512503000    ; deg * 1e7: ~2 km beyond deployment point
+Lon:       -1140620190
+Bearing:   0
+End_Nav:   0     ; no altitude cutoff
+Max_Dist:  3000  ; m
+Min_Angle: 10    ; deg deadband

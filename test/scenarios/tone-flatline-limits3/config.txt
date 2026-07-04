@@ -1,0 +1,39 @@
+; Flatline + Limits 3 on a TOTAL SPEED tone with vertical speed as the
+; rate source (Mode_2 1). Early freefall: vertical speed < Min_Val_2
+; (35 m/s) -> FLATLINE rate (a beep nearly every consumer tick, driver
+; busy ~96% of the time). The alarm window at 3920 m (+/-60 m) is entered
+; ~2 s after exit, mid-burst, so the window entry STOPs a beep in flight
+; -- the tone-cut case of STOP.
+; Characterizes: Flatline 1, tone mode 4, Limits 3 (chirp down/up) both
+; sides, Mode_2 1 as rate source, STOP cutting a tone.
+
+Model:     7
+Rate:      200
+
+Mode:      4     ; Total speed
+Min:       2000  ; cm/s
+Max:       4500
+Limits:    3     ; chirp down/up
+Volume:    6
+
+Mode_2:    1     ; Vertical speed drives rate
+Min_Val_2: 3500
+Max_Val_2: 5000
+Min_Rate:  100
+Max_Rate:  500
+Flatline:  1
+
+Sp_Rate:   0
+Sp_Volume: 6
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 60
+Win_Below: 60
+DZ_Elev:   0
+
+Alarm_Elev: 3920
+Alarm_Type: 1

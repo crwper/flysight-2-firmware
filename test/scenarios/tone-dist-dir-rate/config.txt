@@ -1,0 +1,35 @@
+; DISTANCE pitch with DIRECTION-TO-DESTINATION rate (Mode 6 + Mode_2 5):
+; pitch rises as the canopy closes on the waypoint, beep rate peaks when
+; flying toward it. Mode != Mode_2, so the rate channel RECALCULATES the
+; direction (the else-branch of the mode_2 == 5 special case).
+
+Model:     7
+Rate:      200
+
+Mode:      6     ; Distance to destination
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    5     ; Direction to destination drives rate
+Min_Val_2: 0
+Max_Val_2: 300
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   0
+
+V_Thresh:  300
+H_Thresh:  0
+
+Use_SAS:   1
+
+DZ_Elev:   0
+
+Lat:       512503000
+Lon:       -1140620190
+Bearing:   0
+End_Nav:   0
+Max_Dist:  3000
+Min_Angle: 5

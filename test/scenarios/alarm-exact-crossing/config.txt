@@ -1,0 +1,38 @@
+; Pins QUIRKS.md #8: the half-open crossing interval (elev >= min &&
+; elev < max) when an alarm elevation lands EXACTLY on a GNSS sample.
+; The hand-crafted track descends 2100 -> 1900 m in exact 10 m steps
+; (50 m/s at 5 Hz), holds, and climbs back up. Samples hit 2000 m exactly
+; in both directions.
+;   - alarm 2000 (type 1, beep): descending, fires ON the exact-hit sample
+;     (t=3.0); ascending, fires one sample LATE (t=8.2, after 2000 has
+;     become the lower bound of the pair) -- the asymmetry of the
+;     half-open interval.
+;   - alarm 1955 (type 3, chirp down): ordinary between-samples crossing
+;     in both directions (t=4.0 and t=7.2) as a control.
+; V_Thresh unreachable: alarms only, tiny golden.
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Sp_Volume: 6
+
+V_Thresh:  10000
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 0
+Win_Below: 0
+DZ_Elev:   0
+
+Alarm_Elev: 2000
+Alarm_Type: 1    ; beep
+
+Alarm_Elev: 1955
+Alarm_Type: 3    ; chirp down
