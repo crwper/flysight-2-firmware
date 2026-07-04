@@ -24,3 +24,48 @@ Known environment quirks: PowerShell sessions reset cwd between tool
 calls — always `cd test` in the same command; gcovr filter must be
 `".*audio_control"` (path-relative filters don't match on this setup);
 gcda files ACCUMULATE across runs — delete before measuring coverage.
+
+---
+
+## A0 — 2026-07-04 — SUCCESS
+
+Froze FlySight/audio_control.c to test/reference/audio_control_orig.c
+(with a do-not-edit / deleted-at-C1 header). Added CMake target
+audio_sim_ref (same as audio_sim but the frozen ref instead of the live
+module, no coverage). Wrote test/scripts/fuzz_diff.py (differential
+fuzzer) and gitignored test/fuzz-failures/.
+
+Deviation/gotcha 1 — coverage leak: the existing
+set_source_files_properties(... "--coverage") is DIRECTORY-scoped, so it
+also instrumented config.c/nav.c/common.c in audio_sim_ref (shared
+sources), which then failed to link (undefined __gcov_*). Fixed by
+gating the flag on a per-target property:
+COMPILE_OPTIONS "$<$<BOOL:$<TARGET_PROPERTY:FS_COVERAGE>>:--coverage>"
+with FS_COVERAGE set only on audio_sim. audio_sim's coverage is
+unchanged (gcno/gcda still generated, goldens still 50/50); audio_sim_ref
+has zero gcov instrumentation (verified: no .gcno under its .dir). If you
+ever see stale .gcno in the ref .dir, it is leftover from an aborted
+build — a clean `rm -rf build` rebuild clears it.
+
+Deviation/gotcha 2 — DoD command path form: `run_tests.py --exe
+build/audio_sim_ref.exe` (forward-slash RELATIVE path) throws WinError 2
+on this Windows host — Python subprocess/CreateProcess won't resolve a
+relative program path with `/` separators. Use a backslash or absolute
+path: `--exe build\audio_sim_ref.exe` → 50 passed. (run_tests.py is not
+an A0-allowed file, so I did not "fix" it; the fuzzer itself always uses
+absolute exe paths to sidestep this.)
+
+Fuzzer notes for later cards: single random.Random(seed) drives one
+iteration (gen_jump args then config, fixed draw order) so `--seed N`
+reproduces exactly. It compares (exit_code, trace) as a unit. The
+CURRENT code has a pre-existing shared integer divide-by-zero on some
+random configs (exit 0xC0000094); both binaries crash identically, so
+that is AGREEMENT, bucketed as "shared-crash", NOT a real diff. Only a
+live-vs-ref divergence is saved to fuzz-failures/<seed>/. known-13
+(speech mode 5/7 AND End_Nav>0 or Max_Dist>0) is counted, not saved.
+Verification observed:
+  cmake --build build      -> audio_sim.exe + audio_sim_ref.exe
+  run_tests.py             -> 50 passed, 0 failed, 0 new
+  run_tests.py --exe (ref) -> 50 passed, 0 failed, 0 new
+  fuzz_diff.py --minutes 5 -> 1668 iters, 0 real diffs, 65 known-13,
+                              53 shared-crash
