@@ -97,7 +97,7 @@ git -C .. show --stat HEAD                            # only the card's allowed 
 | A0-infrastructure | done | 3e6ecaa |
 | A1-state-struct | done | 5bae104 |
 | A2-flight-params | done | a8451e8 |
-| A3-speech-tokens | pending | |
+| A3-speech-tokens | done | 686fd9b |
 | A4-split-alarms | pending | |
 | A5-arbiter | pending | |
 | A6-tone-handoff | pending | |

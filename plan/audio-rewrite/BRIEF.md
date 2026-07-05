@@ -140,6 +140,13 @@ the boundaries — but ONLY from card B1 onward.
 
 - Goldens are the contract. In Phase A a trace diff means your change is
   wrong — no exceptions, no blessing.
+- Phase A invariant (refined after A3): byte-identical on all goldens;
+  old-vs-new divergence is permitted ONLY within the known-13 class
+  (speech mode 5/7 with End_Nav>0 or Max_Dist>0, where the old code reads
+  uninitialized tVal — QUIRKS #13). Every Phase A fuzz run must show ALL
+  divergences fall in that class; a single out-of-class diff means your
+  change is wrong. (The orchestrator checks this with is_known_13 forced
+  False; see the A3 journal note.)
 - Read any trace before blessing it (Phase B), and explain every changed
   line in the commit message.
 - Keep the code style of the file you are in (tabs, brace style,

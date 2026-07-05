@@ -184,21 +184,23 @@ divide-by-zero (preserved for B2; shared-crash in the fuzzer). All 50 goldens
 byte-identical; fuzz_diff 3 min = 1126 iters, 0 real diffs (74 known-13, 39
 shared-crash); mutation 30 killed / 0 NO-MATCH.
 
-STOP conditions NOT triggered — and here is why, because it is subtle:
-I instrumented the frozen build first (temporary, reverted). QUIRKS #13's
-uninitialized tVal l/r suffix is WRITTEN to the buffer in the gated modes 5/7
-but is NEVER PLAYED in any scenario: the read cursor sits on the label token,
-whose next slot is buf[15] which the value path never touches (writeInt32ToBuf
-starts writing at buf[14]) so it stays the init-zeroed TOK_END and terminates
-the utterance before the cursor can reach the stale suffix. So speech-nav /
-speech-nav-gated play only the *legitimately-computed* ungated mode-7 suffix
-(deterministic, not stack garbage), and omitting the garbage entirely
-(dir_valid flag, no uninitialized read) is byte-identical for the goldens.
-Every gated-direction config also has End_Nav>0 or Max_Dist>0, i.e. it is in
-the fuzzer's known-13 bucket, so the residual divergence on Sp_Dec 1/3 gated
-(the only decimals where the byte arithmetic would actually voice garbage) is
-excluded there too. If a future stack-layout change ever makes garbage
-reachable, this reasoning breaks — but that is exactly the #13 fix (B4).
+QUIRKS #13 handling (goldens' STOP condition NOT triggered — they are
+byte-identical). CORRECTED RATIONALE — the original claim in this entry,
+that the garbage suffix "is never played," was FALSE and has been retracted
+after orchestrator differential testing (see [orchestrator] note below).
+The truth: in gated mode 5/7 the `decimals = 0` override never runs (it lives
+inside the gated block), so the garbage suffix/terminator land at
+Sp_Dec-dependent offsets in the backward-built buffer and CAN corrupt the
+utterance — e.g. overwriting the label region so the old code voices a
+garbage `right.wav` in place of the label (fuzz seed 372: old plays
+right.wav where new plays directn.wav, with downstream utterances shifting).
+The new token code emits the golden-pinned sequences BYTE-IDENTICALLY and
+intentionally DROPS this garbage for all other (non-golden) gated inputs.
+Michael reviewed and ACCEPTED this on 2026-07-05: reproducing arbitrary
+stack garbage across the architecture change is impossible and pointless,
+and B2 removes the behaviour regardless — so A3 effectively pulls the #13
+fix forward for the gated path. All such divergence is confined to the
+fuzzer's known-13 class (End_Nav>0 or Max_Dist>0), verified below.
 
 Also found while grounding the nav gates: `end_nav`/`max_dist` are uint16_t
 (config.h), so End_Nav 300 -> *1000 -> 300000 wraps to 37856 mm; the gate
@@ -244,3 +246,15 @@ Verification observed:
   mutation_test.py          -> 30 killed, 0 needing attention
   fuzz_diff.py --minutes 3  -> 1126 iters, 0 real diffs, 74 known-13,
                                39 shared-crash
+
+[orchestrator] 2026-07-05 — Independently verified and ACCEPTED (with the
+rationale correction above). Re-ran build + 50/50 (live and ref) + golden
+diff-vs-HEAD~ EMPTY + mutation 30/30. Because the agent's equivalence claim
+was the one thing the fuzzer's known-13 bucket CANNOT check, I ran a
+scratch copy of fuzz_diff with is_known_13 forced False (gated mode-5/7
+byte-compared, not excused): 29/400 configs diverged, 100% classified
+MODE57-GATED, ZERO out-of-class diffs — i.e. no genuine bug, and the old
+code demonstrably DOES voice garbage in gated configs (disproving "never
+played"). Michael's decision: accept; correct journal + QUIRKS #13 + BRIEF
+§6 (done in the following orchestrator bookkeeping commit). Scratch tooling
+removed; tree clean at 686fd9b.
