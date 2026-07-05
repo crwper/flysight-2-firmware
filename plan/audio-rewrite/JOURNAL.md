@@ -69,3 +69,32 @@ Verification observed:
   run_tests.py --exe (ref) -> 50 passed, 0 failed, 0 new
   fuzz_diff.py --minutes 5 -> 1668 iters, 0 real diffs, 65 known-13,
                               53 shared-crash
+
+---
+
+## A1 — 2026-07-04 — SUCCESS
+
+Consolidated every mutable module static into one FS_AudioControl_State_t
+(single `static FS_AudioControl_State_t state;`). Members: timer_id,
+cur_speech, sp_counter, flags, prev_flags, prevHMSL, g_suppress_tone,
+speech_buf[16], speech_ptr, the four volatile ISR-read tone slots
+(tonePitch/toneChirp/toneRate/toneHold, volatile kept inside the struct),
+plus the former function-local statics x0/x1/x2 (updateTones) and
+tone_timer (consumerTimer). FS_AudioControl_Init now does
+memset(&state,0,sizeof(state)) then the existing explicit inits PLUS
+state.x0 = INVALID_VALUE (x1/x2 stay zero — matches the old
+zero-initialized statics; INVALID propagation gates the first two samples
+exactly as before, QUIRKS #6). Pure mechanical rename otherwise.
+
+[orchestrator] The A1 sub-agent (Opus) was terminated by an API monthly
+spend limit immediately AFTER its single full-file Write completed but
+BEFORE it built/tested/journaled/committed. I verified the completed
+working tree independently to the full Phase-A standard rather than
+re-dispatch a proven-correct result: builds clean; run_tests.py -> 50
+passed, 0 failed, 0 new (live) AND on audio_sim_ref; git diff --
+test/golden/ empty (speech-nav / speech-nav-gated l/r unchanged, so no
+stack-layout shift); grep confirms no data statics remain except the
+single `state` instance (static functions + the const sas_table are the
+only other `static` hits); every struct member's type matches the
+original declaration; volatile preserved on the four ISR slots. Journal
+entry written and commit made by the orchestrator on the agent's behalf.
