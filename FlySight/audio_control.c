@@ -148,6 +148,20 @@ typedef struct
 	uint8_t          tone_suppressed; // suppression-zone rising-edge latch
 } Arbiter_t;
 
+// Tone spec handed off producer-task -> consumerTimer ISR. The three fields
+// (formerly the independent volatiles tonePitch/toneChirp/toneRate) form ONE
+// coherent unit: a beep must use a pitch/chirp/rate that were computed
+// together. Double-buffering (see tone_slots/tone_active below) publishes the
+// whole struct atomically so the ISR can never observe a torn mix of an old
+// and a new update. Field order/types match the old volatiles exactly, so the
+// accumulator math (0x10000 - tone_timer <= rate) is bit-identical.
+typedef struct
+{
+	uint32_t pitch;
+	int32_t  chirp;
+	uint16_t rate;
+} ToneSpec_t;
+
 typedef struct
 {
 	uint8_t timer_id;
@@ -168,9 +182,12 @@ typedef struct
 
 	FS_Speech_t speech;
 
-	volatile uint32_t tonePitch;
-	volatile int32_t  toneChirp;
-	volatile uint16_t toneRate;
+	// Double-buffered tone spec (producer task -> consumerTimer ISR). The
+	// producer builds the next spec in the inactive slot, then publishes it with
+	// a single aligned 32-bit store to tone_active; the ISR reads slots[active].
+	// See ToneSpec_t and the memory-ordering note at Arbiter_GrantTone.
+	ToneSpec_t        tone_slots[2];
+	volatile uint32_t tone_active;
 
 	// CHANGE_IN_VALUE_1 history (formerly function-local statics in updateTones)
 	int32_t x0, x1, x2;
@@ -185,19 +202,28 @@ static FS_AudioControl_State_t state;
 //  Tone source helpers
 // ===========================================================================
 
+// Producer-side draft slot: the inactive buffer the producer mutates before
+// publishing it (the flip happens once, at the end of producerTask). Only the
+// producer task ever calls the set* helpers, and the ISR never writes
+// tone_active, so reading the volatile index here is race-free.
+static ToneSpec_t *toneDraft(void)
+{
+	return &state.tone_slots[!state.tone_active];
+}
+
 static void setRate(uint16_t rate)
 {
-	state.toneRate = rate;
+	toneDraft()->rate = rate;
 }
 
 static void setPitch(uint16_t pitch)
 {
-	state.tonePitch = pitch;
+	toneDraft()->pitch = pitch;
 }
 
 static void setChirp(uint32_t chirp)
 {
-	state.toneChirp = chirp;
+	toneDraft()->chirp = chirp;
 }
 
 static void setTone(
@@ -624,12 +650,32 @@ static void Arbiter_FireAlarm(
 // token is playing (ZONE_SPEECH_ACTIVE == tone_hold) or the driver is busy.
 static void Arbiter_GrantTone(const FS_Config_Data_t *config)
 {
-	if (FS_Audio_IsIdle() && !state.arb.tone_hold && state.toneRate > 0 && 0x10000 - state.tone_timer <= state.toneRate)
+	// Snapshot the published index ONCE, then read that whole slot into a local
+	// so pitch/chirp/rate are mutually coherent for this tick.
+	//
+	// Memory ordering (single-writer producer task / single-reader consumer
+	// ISR, one Cortex-M4 core):
+	//   * The producer only ever mutates the INACTIVE slot and publishes it via
+	//     a single naturally-aligned 32-bit store to tone_active, which is
+	//     atomic on Cortex-M4 -- the ISR reads either the old index or the new
+	//     one, never a partial value.
+	//   * This ISR cannot be preempted by the producer task, so it observes the
+	//     chosen slot atomically; and because both run on the same core, taking
+	//     the exception orders the producer's slot writes before its tone_active
+	//     store as seen here -- if we read the new index, the matching slot
+	//     writes are already visible.
+	//   * No DMB is needed: a DMB would only matter for a second core or a
+	//     DMA/peripheral observer. Same-core code + ISR need no barrier for this
+	//     publish-then-flip pattern.
+	const uint32_t idx = state.tone_active;
+	const ToneSpec_t spec = state.tone_slots[idx];
+
+	if (FS_Audio_IsIdle() && !state.arb.tone_hold && spec.rate > 0 && 0x10000 - state.tone_timer <= spec.rate)
 	{
-		FS_Audio_Beep(state.tonePitch, state.tonePitch + state.toneChirp, 125, config->volume * 5);
+		FS_Audio_Beep(spec.pitch, spec.pitch + spec.chirp, 125, config->volume * 5);
 	}
 
-	state.tone_timer += state.toneRate;
+	state.tone_timer += spec.rate;
 }
 
 // Consumer-tick grant. Speech (any queued utterance -- init, ground-elev,
@@ -689,6 +735,14 @@ static void producerTask(void)
 	FS_Config_Data_t config;
 	FS_GNSS_Data_t current;
 
+	// Seed the draft slot from the currently-published one. The old code kept
+	// tonePitch/toneChirp/toneRate as persistent volatiles, so a pass that
+	// touches only a subset (e.g. setRate(0)) carried the rest forward. All
+	// set* helpers below mutate this draft; nothing is published until the flip
+	// at the end of this task, so the ISR keeps seeing the old coherent spec
+	// throughout the pass.
+	*toneDraft() = state.tone_slots[state.tone_active];
+
 	// Copy to local variable
 	memcpy(&config, FS_Config_Get(), sizeof(FS_Config_Data_t));
 	memcpy(&current, FS_GNSS_GetData(), sizeof(FS_GNSS_Data_t));
@@ -744,6 +798,12 @@ static void producerTask(void)
 
 	state.prev_has_fix = state.has_fix;
 	state.prevHMSL = current.hMSL;
+
+	// Publish the freshly-built tone spec: a single aligned 32-bit store to the
+	// volatile index, atomic on Cortex-M4. Only this task writes tone_active, so
+	// the read-modify-write cannot be lost. After this line the ISR reads the
+	// new slot; the just-vacated slot becomes the next pass's draft.
+	state.tone_active = !state.tone_active;
 }
 
 static void consumerTimer(void)

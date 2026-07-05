@@ -89,11 +89,15 @@ MUTANTS = [
                "(int32_t) (3 * config->rate);",
      "change-in-value: wrong time base"),
     # --- timing / consumer ---
-    ("M20", 1, "0x10000 - state.tone_timer <= state.toneRate",
-               "0x10000 - state.tone_timer < state.toneRate",
+    # M20/M21 re-anchored in card A6: the tone volatiles tonePitch/toneChirp/
+    # toneRate were folded into a double-buffered ToneSpec_t; the ISR now reads a
+    # local snapshot `spec` (spec.pitch/spec.chirp/spec.rate). Mutation semantics
+    # unchanged.
+    ("M20", 1, "0x10000 - state.tone_timer <= spec.rate",
+               "0x10000 - state.tone_timer < spec.rate",
      "tone scheduler: accumulator boundary"),
-    ("M21", 1, "state.tonePitch + state.toneChirp, 125",
-               "state.tonePitch + state.toneChirp, 120",
+    ("M21", 1, "spec.pitch + spec.chirp, 125",
+               "spec.pitch + spec.chirp, 120",
      "tone beep length 125 -> 120 ms"),
     ("M22", 5, "config->volume * 5",
                "config->volume * 4",

@@ -393,3 +393,59 @@ Verification observed:
   mutation_test.py          -> 30 killed, 0 needing attention
   fuzz_diff.py --minutes 3  -> 683 iters, 0 real diffs, 42 known-13,
                                28 shared-crash
+
+---
+
+## A6 — 2026-07-05 — SUCCESS
+
+Made the producer-task -> consumerTimer-ISR tone handoff atomic. Folded the
+three independent volatiles (tonePitch/toneChirp/toneRate) into one coherent
+ToneSpec_t {uint32_t pitch; int32_t chirp; uint16_t rate;} and double-buffered
+it: `ToneSpec_t tone_slots[2]` + `volatile uint32_t tone_active`. The set*
+helpers now write the DRAFT (inactive) slot via toneDraft(); producerTask seeds
+the draft from the published slot on entry (so a pass touching only a subset of
+fields carries the rest forward, as the old persistent volatiles did) and
+publishes with a single flip `state.tone_active = !state.tone_active;` at the
+very end. Arbiter_GrantTone (ISR) snapshots the index once and copies that whole
+slot into a local `spec`, so pitch/chirp/rate are mutually coherent per tick.
+Accumulator kept bit-identical: `state.tone_timer += spec.rate`, fire when
+`0x10000 - state.tone_timer <= spec.rate`; 125 ms beep and 20-tick period
+untouched.
+
+HARDWARE LISTEN-TEST REQUIRED (Phase C): this commit is SIM-INVISIBLE. The sim
+is single-threaded (producerTask always runs to completion before any
+consumerTimer event), so it can never exercise the torn-read race this fixes,
+and goldens stayed byte-identical (as the card predicts). The ISR-concurrency
+correctness of the double-buffer is verified ONLY by review here; it MUST be
+confirmed on target by ear in Phase C.
+
+Memory-ordering rationale (commented at Arbiter_GrantTone): single-writer
+(producer task) / single-reader (consumerTimer ISR) on one Cortex-M4 core. The
+producer only ever mutates the inactive slot and publishes via a single
+naturally-aligned 32-bit store to tone_active (atomic on M4). The ISR cannot be
+preempted by the producer, so it reads a slot atomically; and same-core
+exception entry orders the producer's slot writes before its tone_active store
+as observed by the ISR. No DMB needed -- a barrier would only matter for a
+second core or a DMA/peripheral observer. Only the producer writes tone_active,
+so its read-modify-write flip cannot be lost. tone_hold (the old toneHold) is
+NOT part of the spec: it is a single-byte latch on the consumerTask->ISR
+boundary (not producer->ISR), inherently atomic as one aligned store, and does
+not participate in the pitch/chirp/rate coherency group -- left as-is; the
+card's ToneSpec_t is exactly the 3 producer-published fields.
+
+Mutation re-anchoring (mutation_test.py, NOT in this card's allowed list --
+touched only because two anchors went NO-MATCH, as the card permits): M20
+(`state.toneRate` -> `spec.rate`) and M21 (`state.tonePitch + state.toneChirp`
+-> `spec.pitch + spec.chirp`) reference strings that no longer exist after the
+rename; re-anchored to the new ISR-local `spec.*` form with identical mutation
+semantics. M13 (`state.startup.beep_done = true;`) in the same region was
+unaffected. Both re-anchored mutants KILLED; full run 30 killed, 0 NO-MATCH.
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe (clean, no warnings)
+  run_tests.py              -> 50 passed, 0 failed, 0 new (live)
+  run_tests.py --exe (ref, abs path) -> 50 passed, 0 failed, 0 new
+  git diff test/golden/     -> EMPTY
+  mutation_test.py          -> 30 killed, 0 needing attention
+  fuzz_diff.py --minutes 3  -> 628 iters, 0 real diffs, 38 known-13,
+                               24 shared-crash
