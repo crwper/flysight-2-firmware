@@ -5,7 +5,8 @@ Status: pending
 ## Goal
 
 One rule: if a speech value cannot be produced — division guard (glide
-with vD==0, inverse glide with gSpeed==0) or nav gating (End_Nav /
+with vD==0, inverse glide with gSpeed==0, or spoken altitude (mode 12)
+with Sp_Dec 0 so step_size == 0, QUIRKS #19) or nav gating (End_Nav /
 Max_Dist) — the ENTIRE utterance is skipped: no label, no value, no
 left/right suffix. This structurally eliminates the uninitialized-tVal
 read (#13): the suffix decision only ever runs when a direction value

@@ -17,6 +17,8 @@ Audit for the same pattern in any other grouped keys on this branch.
 Also fix the related `<= MAX` off-by-one guards (`num_alarms <=
 FS_CONFIG_MAX_ALARMS` allows writing alarms[MAX-1] again after the
 array is full — verify and correct to match the opener's `<` bound).
+Also consider clamping Sp_Dec >= 1 for Sp_Mode 12 (QUIRKS #19): Sp_Dec 0
+makes the mode-12 step_size zero and divides by it.
 
 ## New scenario required
 
