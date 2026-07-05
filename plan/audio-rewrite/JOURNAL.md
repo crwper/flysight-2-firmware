@@ -98,3 +98,73 @@ single `state` instance (static functions + the const sas_table are the
 only other `static` hits); every struct member's type matches the
 original declaration; volatile preserved on the four ISR slots. Journal
 entry written and commit made by the orchestrator on the agent's behalf.
+
+---
+
+## A2 — 2026-07-04 — SUCCESS
+
+Extracted the shared metrics layer to FlySight/flight_params.c/h. Moved
+verbatim: the sas_table + SAS interpolation (now
+FS_FlightParams_GetSpeedMul(config, hMSL) -> uint16_t, returns 1024 when
+!use_sas) and the tone-path value switch (now
+FS_FlightParams_GetValue(mode, current, config, scale, val, min, max)).
+getValues is a one-line adapter calling GetValue with scale=10000;
+speakValue now sources speed_mul from GetSpeedMul (then applies its own
+unit conversion) and keeps ALL its local value computations. Added the
+develop-compat FS_FlightParams_GetSASCorrectionFactor(hMSL) -> double
+(same table, /1024.0), unused on this branch. Verified byte-exact:
+run_tests.py 50/50 on both audio_sim and audio_sim_ref; fuzz_diff 2 min
+= 700 iters, 0 real diffs.
+
+Deviation from the card (deliberate, behaviour-preserving): speakValue is
+NOT a thin adapter over GetValue for its value computations, only over
+the SAS helper. Reason = an integer-math quirk that would be a hidden
+behaviour change if unified now (that unification is B1, not A2):
+  - speech inverse-glide is `100 * (int32_t)velD / current->gSpeed` where
+    gSpeed is uint32_t, so the division is UNSIGNED; the tone path casts
+    gSpeed to int32_t (SIGNED). For negative velD (climb) these differ.
+  - speech dive-angle multiplies by 100 BEFORE truncation; the tone path
+    does not — `100*trunc(x) != trunc(100*x)`.
+  - speech speed modes use a unit-converted speed_mul (KMH/MPH/KNOTS
+    scaling) that the tone path never applies.
+So `scale` has one live caller on this branch (getValues, 10000); it
+stays a parameter per the card so B1 can supply 100 without renumbering.
+The glide scales are NOT unified (that is B1), exactly as instructed.
+
+Mutation re-anchoring (mutation_test.py, an allowed file): gave each
+MUTANT an optional 6th "file" field (default audio_control.c) and made
+the harness restore each patched file per-iteration so mutants targeting
+different files don't contaminate one another. M17 (glide scale) and M18
+(SAS divisor) now point at flight_params.c — M17 mutates the scale-based
+glide line (scale->literal 1000, kills the tone path), M18 the SAS
+interpolation (count 2: it also appears in the dead-on-this-branch
+GetSASCorrectionFactor; the live GetSpeedMul copy is what the goldens
+catch). Both KILLED.
+
+GOTCHA for future milestone cards: the mutation suite had FIVE OTHER
+broken anchors that were pre-existing A1 collateral, NOT introduced here
+— A1 moved statics into `state` but did not re-anchor M13/M20/M21/M27/M28
+(tone_timer, toneRate, tonePitch, cur_speech, prevHMSL, flags), so they
+were silently NO-MATCH/BUILD-FAIL after A1 (A1 was not a milestone card
+and evidently never ran the mutation suite). This milestone card requires
+30 killed / 0 NO-MATCH, so I re-anchored those five to the `state.`-
+prefixed names too (pure text, mutation semantics unchanged). Final full
+run: 30 killed, 0 NO-MATCH.
+
+CMake: flight_params.c added to FIRMWARE_SOURCES (so it inherits the
+FS_COVERAGE-gated --coverage, ON only for audio_sim) and to the explicit
+audio_sim_ref source list (harmless: the frozen ref is self-contained and
+just links the unused object). Verified no .gcno under the ref .dir and a
+flight_params.c.gcno under the audio_sim .dir — no gcov leak into the
+reference. NOTE for coverage cards: the gcovr filter is still
+".*audio_control", so the moved code in flight_params.c is currently
+OUTSIDE the measured set — a future coverage card should widen the filter
+to include flight_params.
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe + audio_sim_ref.exe
+  run_tests.py              -> 50 passed, 0 failed, 0 new (live)
+  run_tests.py --exe (ref)  -> 50 passed, 0 failed, 0 new
+  mutation_test.py          -> 30 killed, 0 needing attention
+  fuzz_diff.py --minutes 2  -> 700 iters, 0 real diffs, 26 known-13,
+                               28 shared-crash

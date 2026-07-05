@@ -19,8 +19,12 @@ from pathlib import Path
 
 TEST = Path(__file__).resolve().parent.parent
 SRC = TEST.parent / "FlySight" / "audio_control.c"
+# Some metric mutations (glide scale, SAS interpolation) were extracted to
+# flight_params.c in card A2; a mutant may name the file it patches.
+FP = TEST.parent / "FlySight" / "flight_params.c"
 
-# (id, expected occurrence count, old, new, description)
+# (id, expected occurrence count, old, new, description[, file])
+# The optional 6th field is the source file to patch (default: audio_control.c).
 MUTANTS = [
     # --- alarm crossing / windows (competition-critical) ---
     ("M01", 1, "alarm_elev >= min && alarm_elev < max",
@@ -60,7 +64,7 @@ MUTANTS = [
     ("M12", 1, "current.gpsFix == 3",
                "current.gpsFix >= 2",
      "fix gate: accept 2D fix"),
-    ("M13", 1, "flags |= FLAG_BEEP_DONE;",
+    ("M13", 1, "state.flags |= FLAG_BEEP_DONE;",
                ";",
      "first-fix beep: never marked done (repeats)"),
     # --- tone mapping ---
@@ -73,21 +77,21 @@ MUTANTS = [
     ("M16", 2, "setChirp(TONE_MAX_PITCH - TONE_MIN_PITCH);",
                "setChirp(0);",
      "limit chirps: flattened"),
-    ("M17", 1, "10000 * (int32_t) current->gSpeed / velD;",
-               "1000 * (int32_t) current->gSpeed / velD;",
-     "glide ratio tone scale: 10000 -> 1000"),
+    ("M17", 1, "*val = scale * (int32_t) current->gSpeed / velD;",
+               "*val = 1000 * (int32_t) current->gSpeed / velD;",
+     "glide ratio tone scale: 10000 -> 1000", FP),
     ("M18", 2, "speed_mul = y1 + ((y2 - y1) * j) / 1024;",
                "speed_mul = y1 + ((y2 - y1) * j) / 1000;",
-     "SAS interpolation: wrong divisor"),
+     "SAS interpolation: wrong divisor", FP),
     ("M19", 1, "(int32_t) (2 * config->rate);",
                "(int32_t) (3 * config->rate);",
      "change-in-value: wrong time base"),
     # --- timing / consumer ---
-    ("M20", 1, "0x10000 - tone_timer <= toneRate",
-               "0x10000 - tone_timer < toneRate",
+    ("M20", 1, "0x10000 - state.tone_timer <= state.toneRate",
+               "0x10000 - state.tone_timer < state.toneRate",
      "tone scheduler: accumulator boundary"),
-    ("M21", 1, "tonePitch + toneChirp, 125",
-               "tonePitch + toneChirp, 120",
+    ("M21", 1, "state.tonePitch + state.toneChirp, 125",
+               "state.tonePitch + state.toneChirp, 120",
      "tone beep length 125 -> 120 ms"),
     ("M22", 5, "config->volume * 5",
                "config->volume * 4",
@@ -105,11 +109,11 @@ MUTANTS = [
     ("M26", 1, "(number < 20)",
                "(number < 19)",
      "numberToSpeech: teens boundary (19)"),
-    ("M27", 1, "config->speech[cur_speech].mode + 1",
-               "config->speech[cur_speech].mode + 2",
+    ("M27", 1, "config->speech[state.cur_speech].mode + 1",
+               "config->speech[state.cur_speech].mode + 2",
      "speech labels: wrong label index"),
-    ("M28", 1, "(prevHMSL - config->dz_elev) / 1000",
-               "(prevHMSL - config->dz_elev) / 100",
+    ("M28", 1, "(state.prevHMSL - config->dz_elev) / 1000",
+               "(state.prevHMSL - config->dz_elev) / 100",
      "first-fix altitude announcement: wrong scale"),
     ("M29", 1, "config->init_mode == 1",
                "config->init_mode == 3",
@@ -129,37 +133,54 @@ def main():
     if len(sys.argv) > 2 and sys.argv[1] == "--only":
         only = set(sys.argv[2].split(","))
 
-    orig = SRC.read_bytes()  # bytes: line endings survive mutate/restore
+    # Pristine bytes per patched file (line endings survive mutate/restore).
+    # A mutant only ever mutates ONE file at a time; the patched file is
+    # restored after each mutant so the next mutant starts from a clean tree
+    # even when consecutive mutants target different files.
+    originals = {}
+
+    def base_bytes(path):
+        if path not in originals:
+            originals[path] = path.read_bytes()
+        return originals[path]
+
     results = []
 
     try:
-        for (mid, count, old, new, desc) in MUTANTS:
+        for mut in MUTANTS:
+            mid, count, old, new, desc = mut[:5]
+            path = mut[5] if len(mut) > 5 else SRC
             if only and mid not in only:
                 continue
 
+            base = base_bytes(path)
             old_b, new_b = old.encode(), new.encode()
-            n = orig.count(old_b)
+            n = base.count(old_b)
             if n != count:
                 results.append((mid, "NO-MATCH", f"{n} occurrences (expected {count})", desc))
                 continue
 
-            SRC.write_bytes(orig.replace(old_b, new_b))
-            b = run(["cmake", "--build", "build"])
-            if b.returncode != 0:
-                results.append((mid, "BUILD-FAIL", "", desc))
-                continue
+            path.write_bytes(base.replace(old_b, new_b))
+            try:
+                b = run(["cmake", "--build", "build"])
+                if b.returncode != 0:
+                    results.append((mid, "BUILD-FAIL", "", desc))
+                    continue
 
-            t = run([sys.executable, "run_tests.py"])
-            fails = [ln.split()[1] for ln in t.stdout.splitlines() if ln.startswith("FAIL")]
-            if t.returncode != 0 and fails:
-                results.append((mid, "KILLED", f"{len(fails)} scenario(s), e.g. {fails[0]}", desc))
-            elif t.returncode != 0:
-                results.append((mid, "ERROR", (t.stderr or t.stdout)[-120:].replace("\n", " "), desc))
-            else:
-                results.append((mid, "SURVIVED", "", desc))
-            print(f"{results[-1][0]}  {results[-1][1]:<10} {desc}", flush=True)
+                t = run([sys.executable, "run_tests.py"])
+                fails = [ln.split()[1] for ln in t.stdout.splitlines() if ln.startswith("FAIL")]
+                if t.returncode != 0 and fails:
+                    results.append((mid, "KILLED", f"{len(fails)} scenario(s), e.g. {fails[0]}", desc))
+                elif t.returncode != 0:
+                    results.append((mid, "ERROR", (t.stderr or t.stdout)[-120:].replace("\n", " "), desc))
+                else:
+                    results.append((mid, "SURVIVED", "", desc))
+                print(f"{results[-1][0]}  {results[-1][1]:<10} {desc}", flush=True)
+            finally:
+                path.write_bytes(base)
     finally:
-        SRC.write_bytes(orig)
+        for p, b0 in originals.items():
+            p.write_bytes(b0)
         run(["cmake", "--build", "build"])
 
     print()

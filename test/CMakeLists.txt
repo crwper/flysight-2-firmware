@@ -19,6 +19,7 @@ option(COVERAGE "Instrument firmware sources with gcov" ON)
 
 set(FIRMWARE_SOURCES
 	${FS_DIR}/audio_control.c
+	${FS_DIR}/flight_params.c
 	${FS_DIR}/config.c
 	${FS_DIR}/nav.c
 	${FS_DIR}/common.c
@@ -73,6 +74,7 @@ add_executable(audio_sim_ref
 	fakes/fake_ff.c
 	fakes/fake_hal.c
 	reference/audio_control_orig.c
+	${FS_DIR}/flight_params.c
 	${FS_DIR}/config.c
 	${FS_DIR}/nav.c
 	${FS_DIR}/common.c
