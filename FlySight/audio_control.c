@@ -45,55 +45,132 @@
 
 #define ALT_MIN         1500L // Minimum announced altitude (m)
 
-#define FLAG_HAS_FIX         0x01
-#define FLAG_FIRST_FIX       0x02
-#define FLAG_BEEP_DONE       0x04
-#define FLAG_SAY_ALTITUDE    0x08
-#define FLAG_VERTICAL_ACC    0x10
-
 #define TONE_MIN_PITCH 220
 #define TONE_MAX_PITCH 1760
 
-// Alarm crossing / alarm-window source (split out of updateAlarms in A4).
-// prevHMSL is shared producer input passed explicitly, not stored here; the
-// per-source private fields are added by later cards (A5).
+// ===========================================================================
+//  Arbiter policy (data)
+// ===========================================================================
+//
+// Audio channels, highest priority first. The arbiter grants at most one
+// audible event at a time; a higher channel preempts / blocks lower ones.
+// The precedence below is realized structurally by the source-request order
+// (producer sample) and the grant order (consumer tick), NOT by iterating this
+// enum -- it documents the emergent order the old `flags`/`toneHold`/
+// `g_suppress_tone` code produced, which the goldens pin byte-for-byte.
+//
+// Known precedence special case (old code wins, see JOURNAL A5): the STARTUP
+// first-fix beep is deferred until the speech queue is empty and the driver is
+// idle (QUIRKS #3), so although STARTUP outranks SPEECH in the table, the beep
+// effectively yields to any queued speech. The STARTUP rank only governs its
+// precedence over ALT_GROUND_ELEV inside the empty-queue consumer branch.
+typedef enum
+{
+	CH_ALARM,           // alarm crossings (beep/chirp/file) -- never suppressed
+	CH_STARTUP,         // init speech + first-fix beep
+	CH_ALT_GROUND_ELEV, // ground-elevation confirmation
+	CH_ALT_STEP,        // altitude-step announcements
+	CH_SPEECH,          // periodic rotational speech
+	CH_TONE,            // continuous tone
+	CH_COUNT
+} AudioChannel_t;
+
+#define SUP_TONE       (1u << CH_TONE)
+#define SUP_ALT_STEP   (1u << CH_ALT_STEP)
+
+// Suppression zones -> the channels they silence (policy as data). Entering a
+// zone stops current playback + clears the speech queue
+// (Arbiter_ApplySuppression); while inside, the masked channels cannot start.
+// ZONE_ALT_STEP_WINDOW is a fourth zone beyond the brief's three; it is
+// preserved verbatim from the old AltModeSource code (see JOURNAL A5).
+// ZONE_SPEECH_ACTIVE (the old toneHold) is applied dynamically at the consumer
+// tick via Arbiter_t.tone_hold rather than through this producer-side mask.
+typedef enum
+{
+	ZONE_ALARM_WINDOW,    // near a configured alarm elevation
+	ZONE_SILENCE_WINDOW,  // inside a configured silence window
+	ZONE_ALT_STEP_WINDOW, // near an altitude-step announcement elevation
+	ZONE_SPEECH_ACTIVE,   // a speech token is currently playing (old toneHold)
+	ZONE_COUNT
+} SuppressionZone_t;
+
+static const uint8_t suppression_table[ZONE_COUNT] =
+{
+	[ZONE_ALARM_WINDOW]    = SUP_TONE,
+	[ZONE_SILENCE_WINDOW]  = SUP_TONE | SUP_ALT_STEP,
+	[ZONE_ALT_STEP_WINDOW] = SUP_TONE,
+	[ZONE_SPEECH_ACTIVE]   = SUP_TONE,
+};
+
+// ===========================================================================
+//  Sources + arbiter state
+// ===========================================================================
+
+// Alarm source: alarm-window suppression + the alarm-crossing scan. All its
+// per-sample state (prevHMSL) is shared producer input passed explicitly, so
+// the struct carries no private fields.
 typedef struct
 {
 	uint8_t _reserved;
 } AlarmSource_t;
 
-// Altitude-mode source: silence windows + Alt_Step suppression and the
-// Alt_Step announcement (split out of updateAlarms in A4). Step tracking and
-// the ground-elevation latch move here in later cards (A5).
+// Altitude-mode source: silence + alt-step suppression zones, the Alt_Step
+// announcement decision, and the say-altitude latch (old FLAG_SAY_ALTITUDE):
+// the ground-elevation announcement is pending until vAcc is good and it plays,
+// which blocks Alt_Step announcements AND all periodic speech (current
+// behaviour; the QUIRKS #17 refinement is B4, not here).
 typedef struct
 {
-	uint8_t _reserved;
+	bool say_altitude;
 } AltModeSource_t;
+
+// Speech source: rotation index + speech-period accumulator (old cur_speech /
+// sp_counter). Owns which periodic utterance speaks next and when.
+typedef struct
+{
+	uint8_t  cur_speech;
+	uint16_t sp_counter;
+} SpeechSource_t;
+
+// Startup source: first-fix beep bookkeeping (old FLAG_FIRST_FIX /
+// FLAG_BEEP_DONE). Init speech/file queuing happens at FS_AudioControl_Init.
+typedef struct
+{
+	bool first_fix_pending;
+	bool beep_done;
+} StartupSource_t;
+
+// Arbiter state: the two edge/hold latches that used to be `g_suppress_tone`
+// and `toneHold`.
+typedef struct
+{
+	volatile uint8_t tone_hold;   // ISR-read: speech playing suppresses TONE
+	uint8_t          tone_suppressed; // suppression-zone rising-edge latch
+} Arbiter_t;
 
 typedef struct
 {
 	uint8_t timer_id;
 
-	uint8_t cur_speech;
-
-	uint16_t sp_counter;
-
-	uint8_t flags;
-	uint8_t prev_flags;
+	// Producer-level fix / accuracy tracking (old FLAG_HAS_FIX,
+	// FLAG_VERTICAL_ACC, prev_flags). Feeds the sources and the arbiter.
+	bool has_fix;
+	bool prev_has_fix;
+	bool vacc_good;
 
 	int32_t prevHMSL;
 
-	uint8_t g_suppress_tone;
-
 	AlarmSource_t   alarm;
 	AltModeSource_t altmode;
+	SpeechSource_t  speech_src;
+	StartupSource_t startup;
+	Arbiter_t       arb;
 
 	FS_Speech_t speech;
 
 	volatile uint32_t tonePitch;
 	volatile int32_t  toneChirp;
 	volatile uint16_t toneRate;
-	volatile uint8_t  toneHold;
 
 	// CHANGE_IN_VALUE_1 history (formerly function-local statics in updateTones)
 	int32_t x0, x1, x2;
@@ -103,6 +180,10 @@ typedef struct
 } FS_AudioControl_State_t;
 
 static FS_AudioControl_State_t state;
+
+// ===========================================================================
+//  Tone source helpers
+// ===========================================================================
 
 static void setRate(uint16_t rate)
 {
@@ -225,162 +306,58 @@ static void getValues(
 	FS_FlightParams_GetValue(mode, current, config, 10000, val, min, max);
 }
 
-static void speakValue(
-	FS_Config_Data_t *config,
-	FS_GNSS_Data_t *current)
-{
-	FS_Speech_BuildValue(&state.speech, config, current, state.cur_speech);
-}
+// ===========================================================================
+//  Speech source
+// ===========================================================================
 
-// Alarm source: alarm-window suppression (every sample) and the alarm-crossing
-// scan ([min,max) interval, QUIRKS #8). Emits its suppression contribution and,
-// when prev sample had a fix, the index of the alarm to fire (num_alarms = none)
-// as a request; the actual sound / speech-cancel is applied by the caller AFTER
-// the shared rising-edge stop, preserving Stop-before-Beep ordering.
-static void AlarmSource_Update(
-	FS_Config_Data_t *config,
-	FS_GNSS_Data_t *current,
-	bool prev_had_fix,
-	int32_t prevHMSL,
-	uint8_t *suppress_tone,
-	uint8_t *fired_index)
+// Periodic (rotational) speech: when the tone gate is open and the period has
+// elapsed, queue the next non-skipped utterance and rotate. Skips Sp_Mode 12
+// (altitude) entries below ALT_MIN, and (old behaviour) yields to a pending
+// ground-elevation announcement via the say-altitude latch.
+static void SpeechSource_MaybeSpeak(
+	const FS_Config_Data_t *config,
+	const FS_GNSS_Data_t *current)
 {
 	uint8_t i;
 
-	for (i = 0; i < config->num_alarms; ++i)
+	if (config->sp_rate != 0 &&
+	    config->num_speech != 0 &&
+	    state.speech_src.sp_counter >= config->sp_rate &&
+	    !FS_Speech_HasPending(&state.speech) &&
+	    !state.altmode.say_altitude)
 	{
-		const int32_t alarm_elev = config->alarms[i].elev + config->dz_elev;
-
-		if ((current->hMSL <= alarm_elev + config->alarm_window_above) &&
-		    (current->hMSL >= alarm_elev - config->alarm_window_below))
+		for (i = 0; i < config->num_speech; ++i)
 		{
-			*suppress_tone = 1;
-			break;
-		}
-	}
-
-	*fired_index = config->num_alarms;
-
-	if (prev_had_fix)
-	{
-		int32_t min = MIN(prevHMSL, current->hMSL);
-		int32_t max = MAX(prevHMSL, current->hMSL);
-
-		for (i = 0; i < config->num_alarms; ++i)
-		{
-			const int32_t alarm_elev = config->alarms[i].elev + config->dz_elev;
-
-			if (alarm_elev >= min && alarm_elev < max)
+			if ((config->speech[state.speech_src.cur_speech].mode != FS_CONFIG_MODE_ALTITUDE) ||
+				(current->hMSL - config->dz_elev >= ALT_MIN * 1000))
 			{
-				*fired_index = i;
+				FS_Speech_BuildValue(&state.speech, config, current, state.speech_src.cur_speech);
+				state.speech_src.cur_speech = (state.speech_src.cur_speech + 1) % config->num_speech;
 				break;
 			}
+			else
+			{
+				state.speech_src.cur_speech = (state.speech_src.cur_speech + 1) % config->num_speech;
+			}
 		}
+
+		state.speech_src.sp_counter = 0;
 	}
 }
 
-// Altitude-mode source: silence-window suppression (TONE + ALT_STEP), Alt_Step
-// window suppression (TONE, with the ALT_MIN floor), and the Alt_Step
-// announcement decision. want_alt_step folds in every self-contained guard
-// condition; the caller ANDs it with "no alarm fired" and "speech queue empty"
-// (read after the rising-edge stop) before building, matching the old order.
-static void AltModeSource_Update(
-	FS_Config_Data_t *config,
-	FS_GNSS_Data_t *current,
-	bool prev_had_fix,
-	int32_t prevHMSL,
-	uint8_t *suppress_tone,
-	uint8_t *suppress_alt,
-	bool *want_alt_step,
-	int32_t *step_out)
+// Accumulate the speech-period counter (runs every producer sample regardless
+// of suppression / thresholds, exactly as the old trailing block did).
+static void SpeechSource_Tick(const FS_Config_Data_t *config)
 {
-	const int32_t velD = current->velD / 10;
-
-	uint8_t i;
-	int32_t step_size, step = 0, step_elev = 0;
-
-	for (i = 0; i < config->num_windows; ++i)
+	if (state.speech_src.sp_counter < config->sp_rate)
 	{
-		if ((config->windows[i].bottom + config->dz_elev <= current->hMSL) &&
-		    (config->windows[i].top + config->dz_elev >= current->hMSL))
-		{
-			*suppress_tone = 1;
-			*suppress_alt = 1;
-			break;
-		}
-	}
-
-	if (config->alt_step > 0)
-	{
-		if (config->alt_units == FS_CONFIG_UNITS_METERS)
-		{
-			step_size = 10000 * config->alt_step;
-		}
-		else
-		{
-			step_size = 3048 * config->alt_step;
-		}
-
-		step = ((current->hMSL - config->dz_elev) * 10 + step_size / 2) / step_size;
-		step_elev = step * step_size / 10 + config->dz_elev;
-
-		if ((current->hMSL <= step_elev + config->alarm_window_above) &&
-		    (current->hMSL >= step_elev - config->alarm_window_below) &&
-		    (current->hMSL - config->dz_elev >= ALT_MIN * 1000))
-		{
-			*suppress_tone = 1;
-		}
-	}
-
-	*want_alt_step = false;
-	*step_out = step;
-
-	if (prev_had_fix)
-	{
-		int32_t min = MIN(prevHMSL, current->hMSL);
-		int32_t max = MAX(prevHMSL, current->hMSL);
-
-		if ((config->alt_step > 0) &&
-		    (prevHMSL - config->dz_elev >= ALT_MIN * 1000) &&
-		    !(state.flags & FLAG_SAY_ALTITUDE) &&
-		    !*suppress_alt &&
-		    (step_elev >= min && step_elev < max) &&
-		    ABS(velD) >= config->threshold &&
-		    current->gSpeed >= config->hThreshold)
-		{
-			*want_alt_step = true;
-		}
+		state.speech_src.sp_counter += config->rate;
 	}
 }
 
-// Emit the sound for a fired alarm crossing (AlarmSource request). Applied by
-// producerTask after the rising-edge stop so a suppression-zone Stop cannot
-// swallow the alarm beep.
-static void fireAlarm(
-	FS_Config_Data_t *config,
-	uint8_t index)
-{
-	char filename[13];
-
-	switch (config->alarms[index].type)
-	{
-	case 1:	// beep
-		FS_Audio_Beep(TONE_MAX_PITCH, TONE_MAX_PITCH, 125, config->volume * 5);
-		break ;
-	case 2:	// chirp up
-		FS_Audio_Beep(TONE_MIN_PITCH, TONE_MAX_PITCH, 125, config->volume * 5);
-		break ;
-	case 3:	// chirp down
-		FS_Audio_Beep(TONE_MAX_PITCH, TONE_MIN_PITCH, 125, config->volume * 5);
-		break ;
-	case 4:	// play file
-		filename[0] = '\0';
-		strncat(filename, config->alarms[index].filename, sizeof(filename) - 1);
-		strncat(filename, ".wav", sizeof(filename) - 1);
-		FS_Audio_Play(filename, config->sp_volume * 5);
-		break;
-	}
-}
+// ===========================================================================
+//  Tone source
+// ===========================================================================
 
 static void updateTones(
 	FS_Config_Data_t *config,
@@ -390,8 +367,6 @@ static void updateTones(
 
 	int32_t val_1 = INVALID_VALUE, min_1 = config->min, max_1 = config->max;
 	int32_t val_2 = INVALID_VALUE, min_2 = config->min_2, max_2 = config->max_2;
-
-	uint8_t i;
 
 	getValues(current, config, config->mode, &val_1, &min_1, &max_1);
 
@@ -452,36 +427,14 @@ static void updateTones(
 		getValues(current, config, config->mode_2, &val_2, &min_2, &max_2);
 	}
 
-	if (!state.g_suppress_tone)
+	if (!state.arb.tone_suppressed)
 	{
 		if (ABS(velD) >= config->threshold &&
 			current->gSpeed >= config->hThreshold)
 		{
 			setTone(config, val_1, min_1, max_1, val_2, min_2, max_2);
 
-			if (config->sp_rate != 0 &&
-			    config->num_speech != 0 &&
-			    state.sp_counter >= config->sp_rate &&
-				!FS_Speech_HasPending(&state.speech) &&
-				!(state.flags & FLAG_SAY_ALTITUDE))
-			{
-				for (i = 0; i < config->num_speech; ++i)
-				{
-					if ((config->speech[state.cur_speech].mode != FS_CONFIG_MODE_ALTITUDE) ||
-						(current->hMSL - config->dz_elev >= ALT_MIN * 1000))
-					{
-						speakValue(config, current);
-						state.cur_speech = (state.cur_speech + 1) % config->num_speech;
-						break;
-					}
-					else
-					{
-						state.cur_speech = (state.cur_speech + 1) % config->num_speech;
-					}
-				}
-
-				state.sp_counter = 0;
-			}
+			SpeechSource_MaybeSpeak(config, current);
 		}
 		else
 		{
@@ -489,11 +442,247 @@ static void updateTones(
 		}
 	}
 
-	if (state.sp_counter < config->sp_rate)
+	SpeechSource_Tick(config);
+}
+
+// ===========================================================================
+//  Alarm + altitude-mode sources
+// ===========================================================================
+
+// Alarm source: alarm-window suppression (every sample) and the alarm-crossing
+// scan ([min,max) interval, QUIRKS #8). ORs its suppression contribution into
+// suppress_mask and, when the previous sample had a fix, reports the index of
+// the alarm to fire (num_alarms = none); the actual sound / speech-cancel is
+// applied by the arbiter AFTER the shared rising-edge stop, preserving
+// Stop-before-Beep ordering.
+static void AlarmSource_Update(
+	FS_Config_Data_t *config,
+	FS_GNSS_Data_t *current,
+	bool prev_had_fix,
+	int32_t prevHMSL,
+	uint8_t *suppress_mask,
+	uint8_t *fired_index)
+{
+	uint8_t i;
+
+	for (i = 0; i < config->num_alarms; ++i)
 	{
-		state.sp_counter += config->rate;
+		const int32_t alarm_elev = config->alarms[i].elev + config->dz_elev;
+
+		if ((current->hMSL <= alarm_elev + config->alarm_window_above) &&
+		    (current->hMSL >= alarm_elev - config->alarm_window_below))
+		{
+			*suppress_mask |= suppression_table[ZONE_ALARM_WINDOW];
+			break;
+		}
+	}
+
+	*fired_index = config->num_alarms;
+
+	if (prev_had_fix)
+	{
+		int32_t min = MIN(prevHMSL, current->hMSL);
+		int32_t max = MAX(prevHMSL, current->hMSL);
+
+		for (i = 0; i < config->num_alarms; ++i)
+		{
+			const int32_t alarm_elev = config->alarms[i].elev + config->dz_elev;
+
+			if (alarm_elev >= min && alarm_elev < max)
+			{
+				*fired_index = i;
+				break;
+			}
+		}
 	}
 }
+
+// Altitude-mode source: silence-window suppression (TONE + ALT_STEP), Alt_Step
+// window suppression (TONE, with the ALT_MIN floor), and the Alt_Step
+// announcement decision. want_alt_step folds in every self-contained guard,
+// including the silence-window ALT_STEP suppression read back from
+// suppress_mask (only ZONE_SILENCE_WINDOW sets SUP_ALT_STEP); the arbiter ANDs
+// it with "no alarm fired" and "speech queue empty" before building.
+static void AltModeSource_Update(
+	FS_Config_Data_t *config,
+	FS_GNSS_Data_t *current,
+	bool prev_had_fix,
+	int32_t prevHMSL,
+	uint8_t *suppress_mask,
+	bool *want_alt_step,
+	int32_t *step_out)
+{
+	const int32_t velD = current->velD / 10;
+
+	uint8_t i;
+	int32_t step_size, step = 0, step_elev = 0;
+
+	for (i = 0; i < config->num_windows; ++i)
+	{
+		if ((config->windows[i].bottom + config->dz_elev <= current->hMSL) &&
+		    (config->windows[i].top + config->dz_elev >= current->hMSL))
+		{
+			*suppress_mask |= suppression_table[ZONE_SILENCE_WINDOW];
+			break;
+		}
+	}
+
+	if (config->alt_step > 0)
+	{
+		if (config->alt_units == FS_CONFIG_UNITS_METERS)
+		{
+			step_size = 10000 * config->alt_step;
+		}
+		else
+		{
+			step_size = 3048 * config->alt_step;
+		}
+
+		step = ((current->hMSL - config->dz_elev) * 10 + step_size / 2) / step_size;
+		step_elev = step * step_size / 10 + config->dz_elev;
+
+		if ((current->hMSL <= step_elev + config->alarm_window_above) &&
+		    (current->hMSL >= step_elev - config->alarm_window_below) &&
+		    (current->hMSL - config->dz_elev >= ALT_MIN * 1000))
+		{
+			*suppress_mask |= suppression_table[ZONE_ALT_STEP_WINDOW];
+		}
+	}
+
+	*want_alt_step = false;
+	*step_out = step;
+
+	if (prev_had_fix)
+	{
+		int32_t min = MIN(prevHMSL, current->hMSL);
+		int32_t max = MAX(prevHMSL, current->hMSL);
+
+		if ((config->alt_step > 0) &&
+		    (prevHMSL - config->dz_elev >= ALT_MIN * 1000) &&
+		    !state.altmode.say_altitude &&
+		    !(*suppress_mask & SUP_ALT_STEP) &&
+		    (step_elev >= min && step_elev < max) &&
+		    ABS(velD) >= config->threshold &&
+		    current->gSpeed >= config->hThreshold)
+		{
+			*want_alt_step = true;
+		}
+	}
+}
+
+// ===========================================================================
+//  AUDIO ARBITER
+//
+//  The single owner of "what is audible": the ONLY caller of FS_Audio_* in the
+//  audio-control module. Sources compute suppression zones and one-shot
+//  requests; the arbiter turns them into driver calls in priority order.
+// ===========================================================================
+
+// Suppression-zone rising edge (old g_suppress_tone edge): entering any TONE
+// suppression zone stops the playing sound and clears queued speech.
+static void Arbiter_ApplySuppression(bool suppress)
+{
+	if (suppress && !state.arb.tone_suppressed)
+	{
+		FS_Speech_Clear(&state.speech);
+		setRate(0);
+		FS_Audio_Stop();
+	}
+
+	state.arb.tone_suppressed = suppress;
+}
+
+// CH_ALARM: emit the sound for a fired alarm crossing. Preempts unconditionally
+// (no idle guard) so an alarm is always heard; never gated on vAcc.
+static void Arbiter_FireAlarm(
+	FS_Config_Data_t *config,
+	uint8_t index)
+{
+	char filename[13];
+
+	switch (config->alarms[index].type)
+	{
+	case 1:	// beep
+		FS_Audio_Beep(TONE_MAX_PITCH, TONE_MAX_PITCH, 125, config->volume * 5);
+		break ;
+	case 2:	// chirp up
+		FS_Audio_Beep(TONE_MIN_PITCH, TONE_MAX_PITCH, 125, config->volume * 5);
+		break ;
+	case 3:	// chirp down
+		FS_Audio_Beep(TONE_MAX_PITCH, TONE_MIN_PITCH, 125, config->volume * 5);
+		break ;
+	case 4:	// play file
+		filename[0] = '\0';
+		strncat(filename, config->alarms[index].filename, sizeof(filename) - 1);
+		strncat(filename, ".wav", sizeof(filename) - 1);
+		FS_Audio_Play(filename, config->sp_volume * 5);
+		break;
+	}
+}
+
+// CH_TONE: emit a tone beep on the consumer tick. Suppressed while a speech
+// token is playing (ZONE_SPEECH_ACTIVE == tone_hold) or the driver is busy.
+static void Arbiter_GrantTone(const FS_Config_Data_t *config)
+{
+	if (FS_Audio_IsIdle() && !state.arb.tone_hold && state.toneRate > 0 && 0x10000 - state.tone_timer <= state.toneRate)
+	{
+		FS_Audio_Beep(state.tonePitch, state.tonePitch + state.toneChirp, 125, config->volume * 5);
+	}
+
+	state.tone_timer += state.toneRate;
+}
+
+// Consumer-tick grant. Speech (any queued utterance -- init, ground-elev,
+// alt-step, periodic) drains first; the empty-queue branch then grants STARTUP
+// (first-fix beep) ahead of ALT_GROUND_ELEV (which re-queues speech). tone_hold
+// tracks whether a speech token is currently playing.
+static void Arbiter_ConsumerTick(const FS_Config_Data_t *config)
+{
+	if (FS_Speech_HasPending(&state.speech))
+	{
+		if (FS_Audio_IsIdle())
+		{
+			const char *name;
+
+			state.arb.tone_hold = 1;
+
+			name = FS_Speech_PlayNext(&state.speech);
+			if (name)
+			{
+				FS_Audio_Play(name, config->sp_volume * 5);
+			}
+		}
+	}
+	else
+	{
+		state.arb.tone_hold = 0;
+
+		// CH_STARTUP: first-fix beep. Deferred until the speech queue is empty
+		// and the driver idle (QUIRKS #3) -- so it yields to any queued speech
+		// even though STARTUP outranks SPEECH in the priority table.
+		if (state.startup.first_fix_pending && FS_Audio_IsIdle())
+		{
+			state.startup.first_fix_pending = false;
+			FS_Audio_Beep(TONE_MAX_PITCH, TONE_MAX_PITCH, 125, config->volume * 5);
+			state.startup.beep_done = true;
+		}
+
+		// CH_ALT_GROUND_ELEV: ground-elevation confirmation, once vAcc is good.
+		if (state.altmode.say_altitude &&
+			state.has_fix &&
+			state.vacc_good &&
+			FS_Audio_IsIdle())
+		{
+			state.altmode.say_altitude = false;
+
+			FS_Speech_BuildGroundElev(&state.speech, config, state.prevHMSL);
+		}
+	}
+}
+
+// ===========================================================================
+//  Task glue
+// ===========================================================================
 
 static void producerTask(void)
 {
@@ -506,37 +695,29 @@ static void producerTask(void)
 
 	if (current.gpsFix == 3)
 	{
-		state.flags |= FLAG_HAS_FIX;
+		state.has_fix = true;
 
 		{
-			const bool prev_had_fix = (state.prev_flags & FLAG_HAS_FIX) != 0;
+			const bool prev_had_fix = state.prev_has_fix;
 
-			uint8_t suppress_tone = 0;
-			uint8_t suppress_alt = 0;
+			uint8_t suppress_mask = 0;
 			uint8_t fired_index;
 			bool want_alt_step;
 			int32_t step;
 
 			AlarmSource_Update(&config, &current, prev_had_fix, state.prevHMSL,
-			                   &suppress_tone, &fired_index);
+			                   &suppress_mask, &fired_index);
 			AltModeSource_Update(&config, &current, prev_had_fix, state.prevHMSL,
-			                     &suppress_tone, &suppress_alt, &want_alt_step, &step);
+			                     &suppress_mask, &want_alt_step, &step);
 
-			// Rising-edge stop: entering a suppression zone stops the sound.
-			if (suppress_tone && !state.g_suppress_tone)
-			{
-				FS_Speech_Clear(&state.speech);
-				setRate(0);
-				FS_Audio_Stop();
-			}
-
-			state.g_suppress_tone = suppress_tone;
+			// Rising-edge stop: entering a TONE suppression zone stops the sound.
+			Arbiter_ApplySuppression((suppress_mask & SUP_TONE) != 0);
 
 			if (prev_had_fix)
 			{
 				if (fired_index != config.num_alarms)
 				{
-					fireAlarm(&config, fired_index);
+					Arbiter_FireAlarm(&config, fired_index);
 					FS_Speech_Clear(&state.speech);
 				}
 				else if (want_alt_step && !FS_Speech_HasPending(&state.speech))
@@ -548,27 +729,20 @@ static void producerTask(void)
 
 		updateTones(&config, &current);
 
-		if (!(state.flags & FLAG_BEEP_DONE))
+		if (!state.startup.beep_done)
 		{
-			state.flags |= FLAG_FIRST_FIX;
+			state.startup.first_fix_pending = true;
 		}
 	}
 	else
 	{
-		state.flags &= ~FLAG_HAS_FIX;
+		state.has_fix = false;
 		setRate(0);
 	}
 
-	if (current.vAcc < 10000)
-	{
-		state.flags |= FLAG_VERTICAL_ACC;
-	}
-	else
-	{
-		state.flags &= ~FLAG_VERTICAL_ACC;
-	}
+	state.vacc_good = (current.vAcc < 10000);
 
-	state.prev_flags = state.flags;
+	state.prev_has_fix = state.has_fix;
 	state.prevHMSL = current.hMSL;
 }
 
@@ -576,12 +750,7 @@ static void consumerTimer(void)
 {
 	const FS_Config_Data_t *config = FS_Config_Get();
 
-	if (FS_Audio_IsIdle() && !state.toneHold && state.toneRate > 0 && 0x10000 - state.tone_timer <= state.toneRate)
-	{
-		FS_Audio_Beep(state.tonePitch, state.tonePitch + state.toneChirp, 125, config->volume * 5);
-	}
-
-	state.tone_timer += state.toneRate;
+	Arbiter_GrantTone(config);
 
 	// Call consumer task
 	UTIL_SEQ_SetTask(1<<CFG_TASK_FS_AUDIO_CONTROL_CONSUMER_ID, CFG_SCH_PRIO_0);
@@ -591,38 +760,7 @@ static void consumerTask(void)
 {
 	const FS_Config_Data_t *config = FS_Config_Get();
 
-	if (FS_Speech_HasPending(&state.speech))
-	{
-		if (FS_Audio_IsIdle())
-		{
-			state.toneHold = 1;
-
-			FS_Speech_PlayNext(&state.speech, config);
-		}
-	}
-	else
-	{
-		const FS_Config_Data_t *config = FS_Config_Get();
-
-		state.toneHold = 0;
-
-		if ((state.flags & FLAG_FIRST_FIX) && FS_Audio_IsIdle())
-		{
-			state.flags &= ~FLAG_FIRST_FIX;
-			FS_Audio_Beep(TONE_MAX_PITCH, TONE_MAX_PITCH, 125, config->volume * 5);
-			state.flags |= FLAG_BEEP_DONE;
-		}
-
-		if ((state.flags & FLAG_SAY_ALTITUDE) &&
-			(state.flags & FLAG_HAS_FIX) &&
-		    (state.flags & FLAG_VERTICAL_ACC) &&
-			FS_Audio_IsIdle())
-		{
-			state.flags &= ~FLAG_SAY_ALTITUDE;
-
-			FS_Speech_BuildGroundElev(&state.speech, config, state.prevHMSL);
-		}
-	}
+	Arbiter_ConsumerTick(config);
 }
 
 void FS_AudioControl_Init(void)
@@ -632,15 +770,6 @@ void FS_AudioControl_Init(void)
 
 	// Initialize state
 	memset(&state, 0, sizeof(state));
-	state.cur_speech = 0;
-	state.sp_counter = 0;
-	state.flags = 0;
-	state.prev_flags = 0;
-	state.g_suppress_tone = 0;
-	state.tonePitch = 0;
-	state.toneChirp = 0;
-	state.toneRate = 0;
-	state.toneHold = 0;
 	state.x0 = INVALID_VALUE;
 
 	// Initialize producer task
@@ -653,19 +782,21 @@ void FS_AudioControl_Init(void)
 	HW_TS_Create(CFG_TIM_PROC_ID_ISR, &state.timer_id, hw_ts_Repeated, consumerTimer);
 	HW_TS_Start(state.timer_id, CONSUMER_TIMER_TICKS);
 
+	// AltModeSource say-altitude latch: pending ground-elevation announcement.
 	if (config->alt_step > 0)
 	{
-		state.flags |= FLAG_SAY_ALTITUDE;
+		state.altmode.say_altitude = true;
 	}
 
 	for (i = 0; i < config->num_speech; ++i)
 	{
 		if (config->speech[i].mode == FS_CONFIG_MODE_ALTITUDE)
 		{
-			state.flags |= FLAG_SAY_ALTITUDE;
+			state.altmode.say_altitude = true;
 		}
 	}
 
+	// StartupSource: queue init speech / file.
 	if (config->init_mode == 1)
 	{
 		FS_Speech_BuildInitDigits(&state.speech);

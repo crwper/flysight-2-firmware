@@ -66,7 +66,7 @@ MUTANTS = [
     ("M12", 1, "current.gpsFix == 3",
                "current.gpsFix >= 2",
      "fix gate: accept 2D fix"),
-    ("M13", 1, "state.flags |= FLAG_BEEP_DONE;",
+    ("M13", 1, "state.startup.beep_done = true;",
                ";",
      "first-fix beep: never marked done (repeats)"),
     # --- tone mapping ---
@@ -98,8 +98,8 @@ MUTANTS = [
     ("M22", 5, "config->volume * 5",
                "config->volume * 4",
      "tone/alarm volume scale"),
-    ("M23", 1, "toneHold = 1;",
-               "toneHold = 0;",
+    ("M23", 1, "arb.tone_hold = 1;",
+               "arb.tone_hold = 0;",
      "tone hold during speech: disabled"),
     # --- speech ---
     ("M24", 1, "sp_counter >= config->sp_rate &&",

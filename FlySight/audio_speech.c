@@ -28,7 +28,6 @@
 
 #include "main.h"
 #include "app_common.h"
-#include "audio.h"
 #include "audio_speech.h"
 #include "config.h"
 #include "flight_params.h"
@@ -195,26 +194,26 @@ void FS_Speech_Clear(FS_Speech_t *sp)
 	sp->buf[sp->pos] = TOK_END;
 }
 
-bool FS_Speech_PlayNext(FS_Speech_t *sp, const FS_Config_Data_t *config)
+const char *FS_Speech_PlayNext(FS_Speech_t *sp)
 {
 	uint8_t t = sp->buf[sp->pos];
 
 	if (t == TOK_END)
 	{
-		return false;
-	}
-
-	if (t == TOK_RAW_FILE)
-	{
-		FS_Audio_Play(sp->raw_file, config->sp_volume * 5);
-	}
-	else if (t < FS_SPEECH_TOKEN_COUNT && token_files[t])
-	{
-		FS_Audio_Play(token_files[t], config->sp_volume * 5);
+		return NULL;
 	}
 
 	++sp->pos;
-	return true;
+
+	if (t == TOK_RAW_FILE)
+	{
+		return sp->raw_file;
+	}
+	if (t < FS_SPEECH_TOKEN_COUNT && token_files[t])
+	{
+		return token_files[t];
+	}
+	return NULL;
 }
 
 void FS_Speech_BuildValue(

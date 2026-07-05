@@ -314,3 +314,82 @@ Verification observed:
   mutation_test.py          -> 30 killed, 0 needing attention
   fuzz_diff.py --minutes 3  -> 686 iters, 0 real diffs, 42 known-13,
                                28 shared-crash
+
+---
+
+## A5 — 2026-07-05 — SUCCESS
+
+Completed the source decomposition and introduced the arbiter, the sole caller
+of FS_Audio_* in the module. Dissolved the `flags` word, `toneHold` and
+`g_suppress_tone`: FLAG_HAS_FIX/VERTICAL_ACC/prev_flags -> producer-level
+has_fix/prev_has_fix/vacc_good; FLAG_FIRST_FIX/BEEP_DONE -> StartupSource;
+FLAG_SAY_ALTITUDE -> AltModeSource.say_altitude latch; toneHold ->
+Arbiter.tone_hold; g_suppress_tone -> Arbiter.tone_suppressed. New SpeechSource
+(cur_speech + sp_counter) owns periodic-speech selection (SpeechSource_MaybeSpeak
+/ _Tick, extracted verbatim from updateTones). All FS_Audio_* now live in four
+Arbiter_* functions (ApplySuppression/FireAlarm/GrantTone/ConsumerTick) under an
+ARBITER banner; producerTask/consumerTimer/consumerTask/Init call into them and
+contain zero driver calls. All 50 goldens byte-identical (live AND ref);
+mutation 30/30; fuzz 3 min = 683 iters, 0 real diffs (42 known-13, 28 shared-crash).
+
+POLICY-AS-DATA: added AudioChannel_t (priority order) + a suppression_table
+mapping each SuppressionZone_t to a channel bitmask. Sources OR the table entry
+into a shared suppress_mask instead of writing bare suppress_tone/suppress_alt
+bools; the arbiter derives suppress_tone = (mask & SUP_TONE) for the rising-edge
+stop, and AltModeSource reads (mask & SUP_ALT_STEP) for the want_alt_step gate.
+This is a pure re-encoding of A4's two bools (only ZONE_SILENCE_WINDOW sets the
+ALT_STEP bit, matching the old suppress_alt = silence-window-only), verified
+byte-identical. Two extras beyond the brief's three zones, both preserved from
+the old code and noted in-source: ZONE_ALT_STEP_WINDOW (the alt-step suppression
+window also silences TONE) and ZONE_SPEECH_ACTIVE (applied dynamically via
+tone_hold at the consumer tick, not through the producer mask).
+
+PRECEDENCE SPECIAL CASE (1, old code wins; well under the ~3 budget): the table
+ranks STARTUP > SPEECH, but the STARTUP first-fix beep is deferred until the
+speech queue is EMPTY and the driver idle (QUIRKS #3), so it actually yields to
+any queued speech. I did NOT change behaviour to match the table -- the first-fix
+grant stays in the empty-queue consumer branch. The table's STARTUP rank governs
+only its precedence over ALT_GROUND_ELEV within that branch (first-fix checked
+before ground-elev). Documented at the AudioChannel_t enum and Arbiter_ConsumerTick.
+All other adjacent pairs (ALARM>STARTUP, ALT_GROUND_ELEV>ALT_STEP via the
+say_altitude latch, ALT_STEP>SPEECH via the shared !HasPending guard within a
+producer sample, SPEECH>TONE via tone_hold) match the table exactly. FLAG_SAY_ALTITUDE
+still blocks Alt_Step AND all periodic speech (QUIRKS #17 refinement deferred to
+B4); type-0 alarms still fire+cancel-speech (#18 deferred to B5).
+
+QUEUE OWNERSHIP MOVED (audio_speech.c/h, an allowed file): FS_Speech_PlayNext no
+longer calls FS_Audio_Play -- it now returns the wav filename (or NULL) and
+advances; the arbiter (Arbiter_ConsumerTick) performs FS_Audio_Play with
+sp_volume. Dropped the now-unused config param and the audio.h include from
+audio_speech.c. This is what lets the grep check pass: after A5, FS_Audio_ in the
+audio module appears ONLY inside the four Arbiter_* functions (audio_control.c
+lines ~589-674) and never in audio_speech.c. (Other firmware files -- start_control.c,
+config_mode.c, active_mode.c, start_mode.c -- use FS_Audio_ directly; they are
+outside the rewritten module and out of scope for the grep check.)
+
+MUTATION re-anchoring (mutation_test.py, allowed file): only M13 and M23 moved.
+M13 "state.flags |= FLAG_BEEP_DONE;" -> "state.startup.beep_done = true;"; M23
+"toneHold = 1;" -> "arb.tone_hold = 1;" (replacement "arb.tone_hold = 0;", which
+now also matches the else-branch reset line -- harmless, the count check is on the
+unique old string). M24/M25/M29 did NOT need moving despite the card's heads-up:
+their anchor strings ("sp_counter >= config->sp_rate &&", "sp_counter +=
+config->rate;", "config->init_mode == 1") are substrings that survived the
+state.->state.speech_src. rename. M20/M21 (tone slots kept as state members) and
+all source-expression anchors (M01-M10) unchanged. Full run: 30 killed, 0 NO-MATCH.
+
+NOTE for later cards: the brief's §3 ToneSpec double-buffer handoff (two slots +
+volatile active index) is NOT built here -- A5's Steps don't call for it and the
+sim can't test it. The tone slots remain single volatile members
+(tonePitch/toneChirp/toneRate) read directly by Arbiter_GrantTone; a future card
+can introduce the double-buffer. gcovr filter is still ".*audio_control" (A2/A3
+gap unchanged): the priority/suppression data lives in audio_control.c so it is
+measured, but audio_speech.c/flight_params.c remain outside the filter.
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe (clean, no warnings)
+  run_tests.py              -> 50 passed, 0 failed, 0 new (live)
+  run_tests.py --exe (ref, abs path) -> 50 passed, 0 failed, 0 new
+  git diff test/golden/     -> EMPTY
+  mutation_test.py          -> 30 killed, 0 needing attention
+  fuzz_diff.py --minutes 3  -> 683 iters, 0 real diffs, 42 known-13,
+                               28 shared-crash

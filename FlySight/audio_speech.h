@@ -105,9 +105,12 @@ bool FS_Speech_HasPending(const FS_Speech_t *sp);
 // A wav already handed to the driver keeps playing; nothing further starts.
 void FS_Speech_Clear(FS_Speech_t *sp);
 
-// Play the token under the cursor and advance. Returns false (no-op) when the
-// queue is empty. One call per idle consumer tick reproduces the old cadence.
-bool FS_Speech_PlayNext(FS_Speech_t *sp, const FS_Config_Data_t *config);
+// Return the wav filename for the token under the cursor and advance, or NULL
+// when the queue is empty (or the token maps to no file). The ARBITER in
+// audio_control performs the actual FS_Audio_Play, so that the arbiter stays
+// the sole caller of the audio driver. One call per idle consumer tick
+// reproduces the old cadence.
+const char *FS_Speech_PlayNext(FS_Speech_t *sp);
 
 // Utterance builders. Each fills the queue and rewinds the cursor to the start.
 void FS_Speech_BuildValue(FS_Speech_t *sp,
