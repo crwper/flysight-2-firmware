@@ -663,7 +663,10 @@ static void Arbiter_GrantTone(const FS_Config_Data_t *config)
 	//     chosen slot atomically; and because both run on the same core, taking
 	//     the exception orders the producer's slot writes before its tone_active
 	//     store as seen here -- if we read the new index, the matching slot
-	//     writes are already visible.
+	//     writes are already visible. On the producer side a compiler barrier
+	//     ("" ::: "memory") sits immediately before the flip so the non-volatile
+	//     draft-slot writes cannot be sunk past the volatile publish at compile
+	//     time; this hardware note covers the run-time side of the same ordering.
 	//   * No DMB is needed: a DMB would only matter for a second core or a
 	//     DMA/peripheral observer. Same-core code + ISR need no barrier for this
 	//     publish-then-flip pattern.
@@ -803,6 +806,19 @@ static void producerTask(void)
 	// volatile index, atomic on Cortex-M4. Only this task writes tone_active, so
 	// the read-modify-write cannot be lost. After this line the ISR reads the
 	// new slot; the just-vacated slot becomes the next pass's draft.
+	//
+	// Compiler barrier: the draft-slot writes above (the seed copy plus every
+	// set*/setRate/setPitch/setChirp) are NON-volatile, and the C standard only
+	// orders volatile accesses relative to one another -- so without this the
+	// optimizer could legally sink those slot stores PAST the volatile flip,
+	// re-introducing a same-core torn read (an ISR seeing the new index but a
+	// half-written slot). This "" ::: "memory" clobber is a pure COMPILE-TIME
+	// barrier (NOT a DMB -- no hardware barrier is wanted): it forbids the
+	// compiler from moving memory accesses across it. Paired with the single-
+	// core hardware ordering argued at Arbiter_GrantTone (same-core exception
+	// entry orders the store-buffer drain), it makes the publish-then-flip
+	// airtight against both compile-time and run-time reordering.
+	__asm__ volatile ("" ::: "memory");   // compiler barrier
 	state.tone_active = !state.tone_active;
 }
 

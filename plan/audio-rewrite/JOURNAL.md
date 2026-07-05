@@ -449,3 +449,32 @@ Verification observed:
   mutation_test.py          -> 30 killed, 0 needing attention
   fuzz_diff.py --minutes 3  -> 628 iters, 0 real diffs, 38 known-13,
                                24 shared-crash
+
+---
+
+## A6 (follow-up) — 2026-07-05 — SUCCESS
+
+Compiler-barrier hardening for the A6 tone-spec handoff, authorized by
+Michael after orchestrator review. The producer's draft-slot writes (the
+seed copy at the top of producerTask plus every set*/setRate/setPitch/
+setChirp) are NON-volatile, and the C standard only orders volatile
+accesses relative to each other -- so the optimizer could legally sink
+those slot stores PAST the volatile `state.tone_active = !state.tone_active;`
+flip, re-introducing a same-core torn read. Added a pure compiler barrier
+`__asm__ volatile ("" ::: "memory");` immediately before the flip (NOT a
+DMB -- no hardware barrier wanted; the single-core hardware ordering was
+already argued correct). Updated the adjacent publish comment and the
+Arbiter_GrantTone memory-ordering note to explain the barrier pairs with
+that hardware argument to make publish-then-flip airtight. ISR read side
+(idx then slot[idx], address-dependent) untouched.
+
+SIM-INVISIBLE (as A6): single-threaded sim can't exercise the race;
+goldens byte-identical. Still folded into the A6 HARDWARE listen-test
+(Phase C). Touched only FlySight/audio_control.c + this journal.
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe (clean, only audio_control.c
+                               recompiled, no warnings)
+  run_tests.py              -> 50 passed, 0 failed, 0 new (live)
+  run_tests.py --exe (ref)  -> 50 passed, 0 failed, 0 new
+  git diff -- test/golden/  -> EMPTY
