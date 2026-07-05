@@ -258,3 +258,59 @@ code demonstrably DOES voice garbage in gated configs (disproving "never
 played"). Michael's decision: accept; correct journal + QUIRKS #13 + BRIEF
 §6 (done in the following orchestrator bookkeeping commit). Scratch tooling
 removed; tree clean at 686fd9b.
+
+---
+
+## A4 — 2026-07-05 — SUCCESS
+
+Split updateAlarms into AlarmSource_Update (alarm-window suppression + crossing
+scan, QUIRKS #8) and AltModeSource_Update (silence-window + Alt_Step-window
+suppression + the Alt_Step announcement decision). Added empty AlarmSource_t /
+AltModeSource_t to `state` as scaffolding (fields land in A5; prevHMSL stays a
+single shared member passed explicitly, NOT duplicated, per the card). All 50
+goldens byte-identical (live AND ref); mutation 30/30; fuzz 3 min = 686 iters,
+0 real diffs (42 known-13, 28 shared-crash).
+
+DESIGN — why the sources emit requests instead of calling FS_Audio directly:
+the six-step per-sample order interleaves the two concerns around the SHARED
+rising-edge stop (step 4). AlarmSource's window scan (step 1) must run BEFORE
+step 4 while its crossing fire (step 5) must run AFTER (else the zone-entry
+FS_Audio_Stop would swallow the just-started alarm beep — verified this reorder
+is observable). Likewise AltMode's windows (steps 2,3) precede step 4 but its
+announce (step 6) follows it. So a single call per source is only possible if
+the sources COMPUTE (suppress flags + a fire-index request + a want_alt_step
+request) and producerTask applies step 4, then the alarm sound, then the
+announce, in the original order. This matches the card's "outputs for suppress
+flags / requests" wording and the brief's arbiter direction. Every state read
+was checked to be unaffected by the move: the announce's FS_Speech_HasPending
+(the only guard that observes step 4's Clear) is evaluated in producerTask at
+the same point as before; want_alt_step folds in only side-effect-free guards
+(alt_step>0, ALT_MIN floor, !FLAG_SAY_ALTITUDE, !suppress_alt, step_elev in
+[min,max), V/H thresholds), and producerTask ANDs in !alarm_fired (== old
+`i == num_alarms`) and !HasPending. Type-0/unknown alarm still "fires" (clears
+speech, suppresses the announce, no sound) exactly as before — untouched, B5.
+
+MUTATION — mutation_test.py NOT modified (no anchor moved). Relocating the
+alarm-fire switch into producerTask would have turned `config->volume * 5`
+into `config.volume * 5` (config is the producer's local struct, not a
+pointer), breaking M05 and M22 (count-5 anchor). To avoid re-anchoring across
+two text forms I kept the fire code in a small `fireAlarm(FS_Config_Data_t
+*config, uint8_t index)` helper that reproduces the original lines verbatim on
+a pointer — all five `config->volume * 5` sites and the M05 beep line stay
+byte-identical, and M01-M04/M08/M09/M10 anchors were preserved by keeping the
+source functions on `config->` pointer params. Full run: 30 killed, 0 NO-MATCH.
+
+GOTCHA — the source structs (state.alarm/state.altmode) are intentionally
+unused in A4 (empty scaffolding); no -Wall warning since unused struct members
+don't warn. A5 populates them (step tracking, ground_elev latch). Also re-noted
+the A0 quirk: `run_tests.py --exe build/audio_sim_ref.exe` (relative, forward
+slashes) throws WinError 2 — use an absolute path for the ref binary.
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe (clean, no warnings)
+  run_tests.py              -> 50 passed, 0 failed, 0 new (live)
+  run_tests.py --exe (ref, abs path) -> 50 passed, 0 failed, 0 new
+  git diff test/golden/     -> EMPTY
+  mutation_test.py          -> 30 killed, 0 needing attention
+  fuzz_diff.py --minutes 3  -> 686 iters, 0 real diffs, 42 known-13,
+                               28 shared-crash
