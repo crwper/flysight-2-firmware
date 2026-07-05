@@ -99,7 +99,7 @@ git -C .. show --stat HEAD                            # only the card's allowed 
 | A2-flight-params | done | a8451e8 |
 | A3-speech-tokens | done | 686fd9b |
 | A4-split-alarms | done | a6f9cc3 |
-| A5-arbiter | pending | |
+| A5-arbiter | done | 15d9a35 |
 | A6-tone-handoff | pending | |
 | A7-cleanup | pending | |
 | B1-float-metrics | pending | |
