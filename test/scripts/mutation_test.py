@@ -25,6 +25,46 @@ SRC = TEST.parent / "FlySight" / "audio_control.c"
 FP = TEST.parent / "FlySight" / "flight_params.c"
 AS = TEST.parent / "FlySight" / "audio_speech.c"
 
+# --- Card A7 arbiter mutants (M31-M33) ---
+# Multi-line anchors are defined here for readability. M32 swaps the CH_ALARM and
+# CH_ALT_STEP "priority rows" in producerTask: on a same-sample alarm+alt-step
+# collision the step is announced instead of the alarm firing.
+_M32_OLD = (
+    "\t\t\t\tif (fired_index != config.num_alarms)\n"
+    "\t\t\t\t{\n"
+    "\t\t\t\t\tArbiter_FireAlarm(&config, fired_index);\n"
+    "\t\t\t\t\tFS_Speech_Clear(&state.speech);\n"
+    "\t\t\t\t}\n"
+    "\t\t\t\telse if (want_alt_step && !FS_Speech_HasPending(&state.speech))\n"
+    "\t\t\t\t{\n"
+    "\t\t\t\t\tFS_Speech_BuildAltStep(&state.speech, &config, step);\n"
+    "\t\t\t\t}"
+)
+_M32_NEW = (
+    "\t\t\t\tif (want_alt_step && !FS_Speech_HasPending(&state.speech))\n"
+    "\t\t\t\t{\n"
+    "\t\t\t\t\tFS_Speech_BuildAltStep(&state.speech, &config, step);\n"
+    "\t\t\t\t}\n"
+    "\t\t\t\telse if (fired_index != config.num_alarms)\n"
+    "\t\t\t\t{\n"
+    "\t\t\t\t\tArbiter_FireAlarm(&config, fired_index);\n"
+    "\t\t\t\t\tFS_Speech_Clear(&state.speech);\n"
+    "\t\t\t\t}"
+)
+
+# M33 tests the alarm->speech suppression axis (card #3, "alarm windows suppress
+# SPEECH too"). The literal mask edit is EQUIVALENT under A5's arbiter: every
+# SUP_TONE zone -- including alarm windows -- already clears the speech queue on
+# entry via Arbiter_ApplySuppression, so widening the alarm-window mask changes
+# nothing observable. The observable dual is the alarm CROSSING's speech-cancel;
+# dropping it is killed by alarm-type-none, where a Type-0 alarm's ONLY effect is
+# that cancel (QUIRKS #18).
+_M33_OLD = (
+    "\t\t\t\t\tArbiter_FireAlarm(&config, fired_index);\n"
+    "\t\t\t\t\tFS_Speech_Clear(&state.speech);"
+)
+_M33_NEW = "\t\t\t\t\tArbiter_FireAlarm(&config, fired_index);"
+
 # (id, expected occurrence count, old, new, description[, file])
 # The optional 6th field is the source file to patch (default: audio_control.c).
 MUTANTS = [
@@ -82,7 +122,10 @@ MUTANTS = [
     ("M17", 1, "*val = scale * (int32_t) current->gSpeed / velD;",
                "*val = 1000 * (int32_t) current->gSpeed / velD;",
      "glide ratio tone scale: 10000 -> 1000", FP),
-    ("M18", 2, "speed_mul = y1 + ((y2 - y1) * j) / 1024;",
+    # M18 was count-2 (GetSpeedMul + the develop-compat GetSASCorrectionFactor);
+    # card A7 deleted the dead GetSASCorrectionFactor, so the live GetSpeedMul
+    # copy is now the only occurrence.
+    ("M18", 1, "speed_mul = y1 + ((y2 - y1) * j) / 1024;",
                "speed_mul = y1 + ((y2 - y1) * j) / 1000;",
      "SAS interpolation: wrong divisor", FP),
     ("M19", 1, "(int32_t) (2 * config->rate);",
@@ -127,6 +170,14 @@ MUTANTS = [
     ("M30", 1, "tVal = tVal + 5;",
                "tVal = tVal;",
      "distance speech: rounding offset dropped", AS),
+    # --- arbiter / policy layer (card A7) ---
+    ("M31", 1, "[ZONE_SILENCE_WINDOW]  = SUP_TONE | SUP_ALT_STEP,",
+               "[ZONE_SILENCE_WINDOW]  = SUP_TONE,",
+     "arbiter: drop silence-window -> ALT_STEP suppression (kill: silence-window-metric)"),
+    ("M32", 1, _M32_OLD, _M32_NEW,
+     "arbiter: swap ALARM/ALT_STEP priority rows (kill: alarm-altstep-collision)"),
+    ("M33", 1, _M33_OLD, _M33_NEW,
+     "arbiter: alarm crossing no longer cancels queued speech (kill: alarm-type-none)"),
 ]
 
 

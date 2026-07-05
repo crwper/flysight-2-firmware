@@ -210,28 +210,3 @@ void FS_FlightParams_GetValue(
 		break;
 	}
 }
-
-double FS_FlightParams_GetSASCorrectionFactor(int32_t hMSL)
-{
-	uint16_t speed_mul;
-
-	if (hMSL < 0)
-	{
-		speed_mul = sas_table[0];
-	}
-	else if (hMSL >= 11534336L)
-	{
-		speed_mul = sas_table[11];
-	}
-	else
-	{
-		int32_t h = hMSL / 1024;
-		uint16_t i = h / 1024;
-		uint16_t j = h % 1024;
-		uint16_t y1 = sas_table[i];
-		uint16_t y2 = sas_table[i + 1];
-		speed_mul = y1 + ((y2 - y1) * j) / 1024;
-	}
-
-	return speed_mul / 1024.0;
-}

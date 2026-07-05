@@ -106,14 +106,6 @@ static const uint8_t suppression_table[ZONE_COUNT] =
 //  Sources + arbiter state
 // ===========================================================================
 
-// Alarm source: alarm-window suppression + the alarm-crossing scan. All its
-// per-sample state (prevHMSL) is shared producer input passed explicitly, so
-// the struct carries no private fields.
-typedef struct
-{
-	uint8_t _reserved;
-} AlarmSource_t;
-
 // Altitude-mode source: silence + alt-step suppression zones, the Alt_Step
 // announcement decision, and the say-altitude latch (old FLAG_SAY_ALTITUDE):
 // the ground-elevation announcement is pending until vAcc is good and it plays,
@@ -174,7 +166,6 @@ typedef struct
 
 	int32_t prevHMSL;
 
-	AlarmSource_t   alarm;
 	AltModeSource_t altmode;
 	SpeechSource_t  speech_src;
 	StartupSource_t startup;
@@ -227,7 +218,7 @@ static void setChirp(uint32_t chirp)
 }
 
 static void setTone(
-	FS_Config_Data_t *config,
+	const FS_Config_Data_t *config,
 	int32_t val_1,
 	int32_t min_1,
 	int32_t max_1,
@@ -322,7 +313,7 @@ static void setTone(
 
 static void getValues(
 	FS_GNSS_Data_t *current,
-	FS_Config_Data_t *config,
+	const FS_Config_Data_t *config,
 	uint8_t mode,
 	int32_t *val,
 	int32_t *min,
@@ -386,7 +377,7 @@ static void SpeechSource_Tick(const FS_Config_Data_t *config)
 // ===========================================================================
 
 static void updateTones(
-	FS_Config_Data_t *config,
+	const FS_Config_Data_t *config,
 	FS_GNSS_Data_t *current)
 {
 	const int32_t velD = current->velD / 10;
@@ -482,7 +473,7 @@ static void updateTones(
 // applied by the arbiter AFTER the shared rising-edge stop, preserving
 // Stop-before-Beep ordering.
 static void AlarmSource_Update(
-	FS_Config_Data_t *config,
+	const FS_Config_Data_t *config,
 	FS_GNSS_Data_t *current,
 	bool prev_had_fix,
 	int32_t prevHMSL,
@@ -530,7 +521,7 @@ static void AlarmSource_Update(
 // suppress_mask (only ZONE_SILENCE_WINDOW sets SUP_ALT_STEP); the arbiter ANDs
 // it with "no alarm fired" and "speech queue empty" before building.
 static void AltModeSource_Update(
-	FS_Config_Data_t *config,
+	const FS_Config_Data_t *config,
 	FS_GNSS_Data_t *current,
 	bool prev_had_fix,
 	int32_t prevHMSL,
@@ -621,7 +612,7 @@ static void Arbiter_ApplySuppression(bool suppress)
 // CH_ALARM: emit the sound for a fired alarm crossing. Preempts unconditionally
 // (no idle guard) so an alarm is always heard; never gated on vAcc.
 static void Arbiter_FireAlarm(
-	FS_Config_Data_t *config,
+	const FS_Config_Data_t *config,
 	uint8_t index)
 {
 	char filename[13];
@@ -691,15 +682,11 @@ static void Arbiter_ConsumerTick(const FS_Config_Data_t *config)
 	{
 		if (FS_Audio_IsIdle())
 		{
-			const char *name;
-
 			state.arb.tone_hold = 1;
 
-			name = FS_Speech_PlayNext(&state.speech);
-			if (name)
-			{
-				FS_Audio_Play(name, config->sp_volume * 5);
-			}
+			// Guarded by FS_Speech_HasPending above, so a queued token always
+			// maps to a wav filename (or the raw-file payload) -- never NULL.
+			FS_Audio_Play(FS_Speech_PlayNext(&state.speech), config->sp_volume * 5);
 		}
 	}
 	else
@@ -735,7 +722,12 @@ static void Arbiter_ConsumerTick(const FS_Config_Data_t *config)
 
 static void producerTask(void)
 {
-	FS_Config_Data_t config;
+	// Producer-private config snapshot. QUIRKS #7: config is READ-ONLY in the
+	// audio module -- nothing writes to it (the old direction-mode `decimals = 0`
+	// override now lives in a local inside FS_Speech_BuildValue). The copy is
+	// kept only for producer/ISR isolation and is `const` so the read-only
+	// contract is enforced at compile time end-to-end.
+	const FS_Config_Data_t config = *FS_Config_Get();
 	FS_GNSS_Data_t current;
 
 	// Seed the draft slot from the currently-published one. The old code kept
@@ -746,8 +738,7 @@ static void producerTask(void)
 	// throughout the pass.
 	*toneDraft() = state.tone_slots[state.tone_active];
 
-	// Copy to local variable
-	memcpy(&config, FS_Config_Get(), sizeof(FS_Config_Data_t));
+	// Copy current GNSS sample to a local snapshot.
 	memcpy(&current, FS_GNSS_GetData(), sizeof(FS_GNSS_Data_t));
 
 	if (current.gpsFix == 3)

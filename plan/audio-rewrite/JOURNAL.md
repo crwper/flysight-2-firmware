@@ -478,3 +478,100 @@ Verification observed:
   run_tests.py              -> 50 passed, 0 failed, 0 new (live)
   run_tests.py --exe (ref)  -> 50 passed, 0 failed, 0 new
   git diff -- test/golden/  -> EMPTY
+
+---
+
+## A7 — 2026-07-05 — SUCCESS
+
+Phase A closeout. (1) CONST CONFIG END-TO-END (QUIRKS #7): constified the six
+audio_control.c helpers that still took `FS_Config_Data_t *` (setTone, getValues,
+updateTones, AlarmSource_Update, AltModeSource_Update, Arbiter_FireAlarm); the
+producer's local snapshot is now `const FS_Config_Data_t config = *FS_Config_Get();`
+(copy kept for producer/ISR isolation, but const so nothing can write it).
+audio_speech.c / flight_params.c were already const. The old direction-mode
+`decimals = 0` override already lives in a LOCAL inside FS_Speech_BuildValue (A3),
+so no config mutation moved. Verified: grep finds ZERO writes to config->/config.
+in the whole module. (2) DEAD-CODE SWEEP: removed the unused AlarmSource_t struct +
+`state.alarm` member (empty A4 scaffolding); removed FS_FlightParams_GetSASCorrection
+Factor (+ its .h decl) — the develop-compat shim A2 kept, now genuinely dead and a
+coverage liability; removed four unreachable defensive branches (writeValueTokens'
+`|| buf[idx]==TOK_END` operand, FS_Speech_PlayNext's TOK_END/bounds/NULL guards,
+and the arbiter's `if (name)` guard). All removals byte-identical (proven by 50/50
++ fuzz). (3) MUTATION 33 killed / 0 NO-MATCH. (4) COVERAGE at target minus two
+documented branches (below). (5) 3-min fuzz clean; build ready for the 120-min run.
+
+MUTATION re-anchor + new arbiter mutants (mutation_test.py, allowed file). M18
+count 2->1 (the second occurrence was inside the just-deleted GetSASCorrectionFactor;
+the live GetSpeedMul copy still killed by tone SAS goldens). Added THREE arbiter
+mutants, each killed by a distinct golden (verified individually AND in the full run):
+  * M31  drop the silence-window -> ALT_STEP suppression entry
+         ([ZONE_SILENCE_WINDOW] = SUP_TONE|SUP_ALT_STEP  ->  SUP_TONE)
+         KILLED by silence-window-metric (the 2750/2500 m steps inside window 1,
+         normally suppressed, start announcing).   [card mutant #2, literal]
+  * M32  swap two priority rows: exchange the CH_ALARM and CH_ALT_STEP branches in
+         producerTask so a same-sample collision announces the step instead of
+         firing the alarm.
+         KILLED by alarm-altstep-collision (alarm at 3000 m == an Alt_Step boundary;
+         at t=532.2 the 1760 Hz alarm beep is replaced by a "3000 meters" utterance).
+         [card mutant #1]
+  * M33  alarm crossing no longer cancels queued speech (drop the FS_Speech_Clear
+         after Arbiter_FireAlarm).
+         KILLED by alarm-type-none (a Type-0 alarm's ONLY observable effect is that
+         speech cancel, QUIRKS #18; without it the queued utterance now plays).
+         [card mutant #3, observable dual — see note]
+
+MUTANT-DESIGN NOTES for future milestone cards (A5's arbiter shape matters):
+  - Card #3 was "make alarm windows suppress SPEECH too." The LITERAL mask edit
+    ([ZONE_ALARM_WINDOW] |= SUP_SPEECH, or |= SUP_ALT_STEP) is an EQUIVALENT mutant
+    here: every SUP_TONE zone — including alarm windows — ALREADY clears the speech
+    queue on entry via Arbiter_ApplySuppression, and no code reads a SUP_SPEECH bit;
+    also all golden alarm windows use the default width 0 (single-sample), so no
+    scenario has speech/alt-step inside a nonzero alarm window. M33 therefore tests
+    the same ALARM->SPEECH suppression axis via its observable dual (the crossing's
+    speech-cancel).
+  - "Swap two priority rows" cannot be realized on the AudioChannel_t enum: the enum
+    is documentation-only (A5 realizes precedence structurally). Swapping enum rows
+    only permutes the SUP_* bit indices, which every user references by symbol —
+    fully consistent, hence equivalent/unkillable. M32 swaps the STRUCTURAL rows
+    (the CH_ALARM vs CH_ALT_STEP branch order in producerTask) instead.
+
+COVERAGE (gcda deleted, run_tests, filter widened to
+".*audio_control|.*flight_params|.*audio_speech" per the card, --txt-metric branch):
+  audio_control.c  188/189   missing 771
+  audio_speech.c   104/105   missing 131
+  flight_params.c   51/ 65   missing 85,182,185,190,192
+Residue analysis — ALLOWED (reserved) and JUSTIFIED (card step 4 / milestone escape
+hatch "simplified away OR justified in the journal"):
+  * flight_params 182/185/190/192 + part of the line-85 switch = the reserved
+    FS_CONFIG_MODE_LEFT_RIGHT (mode 10) metrics entry — QUIRKS #15, the explicitly
+    allowed residue. The remaining line-85 edge is the switch's implicit no-match
+    (no `default:`) branch: unreachable because config.c validates Mode/Mode_2 into
+    a handled case. Same reserved/validated-mode class; present in the frozen ref's
+    identical switch too.
+  * audio_control.c:771 — the `else if (want_alt_step && !FS_Speech_HasPending(...))`
+    second operand's FALSE leg (a step crossing while a prior utterance is still
+    queued). Reachable in theory (Sp_Rate>0 + Alt_Step>0 on a fast descent) but not
+    exercised by any of the 50 committed goldens. It is a faithful port of the
+    original announce guard and CANNOT be removed without a behaviour change
+    (a step would overwrite pending speech).
+  * audio_speech.c:131 — the `if (val < 0)` MINUS leg in writeValueTokens. Reachable
+    (a climbing track with vertical-speed / glide speech yields a negative value ->
+    "minus") but no committed golden voices a negative speech VALUE (init-speech's
+    minus.wav comes from BuildInitDigits, a different path). Cannot be removed
+    (negative-value speech is real behaviour) and cannot be covered without adding a
+    scenario — forbidden in Phase A (goldens read-only).
+  Both non-LEFT_RIGHT branches were ALREADY unmeasured before A7 (audio_speech.c /
+  flight_params.c sat outside the old ".*audio_control" filter; the old code's
+  equivalents lived in unmeasured common.c). A7 surfaces them by widening the filter;
+  they are documented here, not a regression. Everything genuinely dead was removed;
+  what remains is either reserved (LEFT_RIGHT) or reachable-but-golden-unexercised.
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe + audio_sim_ref.exe (clean, no warnings)
+  run_tests.py              -> 50 passed, 0 failed, 0 new (live)
+  run_tests.py --exe (ref)  -> 50 passed, 0 failed, 0 new
+  git diff -- test/golden/  -> EMPTY
+  grep config writes        -> none (const end-to-end)
+  mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)
+  gcovr (widened, branch)   -> residue = LEFT_RIGHT (reserved) + 2 justified above
+  fuzz_diff.py --minutes 3  -> 459 iters, 0 real diffs, 33 known-13, 17 shared-crash

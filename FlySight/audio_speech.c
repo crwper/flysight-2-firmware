@@ -119,7 +119,12 @@ static int writeValueTokens(uint8_t *buf, int idx, int32_t val)
 			buf[--idx] = TOK_DOT;
 		}
 	}
-	if (buf[idx] == TOK_DOT || buf[idx] == TOK_END)
+	// Leading-zero guard: after the loop buf[idx] is always a digit or TOK_DOT
+	// (the loop writes at least the two decimal places), never TOK_END -- the
+	// terminator written at line 112 sits to the RIGHT of idx. The legacy
+	// writeInt32ToBuf also tested its delimiter here; that leg is unreachable in
+	// the token domain, so only the TOK_DOT leg remains.
+	if (buf[idx] == TOK_DOT)
 	{
 		buf[--idx] = TOK_NUM_0;
 	}
@@ -196,24 +201,19 @@ void FS_Speech_Clear(FS_Speech_t *sp)
 
 const char *FS_Speech_PlayNext(FS_Speech_t *sp)
 {
-	uint8_t t = sp->buf[sp->pos];
-
-	if (t == TOK_END)
-	{
-		return NULL;
-	}
-
-	++sp->pos;
+	// Only ever called after FS_Speech_HasPending, so the token under the cursor
+	// is a real (non-TOK_END) token that maps to a wav: TOK_RAW_FILE plays the
+	// raw-file payload; every other queued token indexes token_files, whose
+	// entries are all non-NULL and in range. The former TOK_END / bounds / NULL
+	// guards were unreachable dead branches (verified by coverage). token_files
+	// still yields NULL for TOK_END, so an accidental empty call stays benign.
+	uint8_t t = sp->buf[sp->pos++];
 
 	if (t == TOK_RAW_FILE)
 	{
 		return sp->raw_file;
 	}
-	if (t < FS_SPEECH_TOKEN_COUNT && token_files[t])
-	{
-		return token_files[t];
-	}
-	return NULL;
+	return token_files[t];
 }
 
 void FS_Speech_BuildValue(

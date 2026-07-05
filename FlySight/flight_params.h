@@ -48,9 +48,4 @@ void FS_FlightParams_GetValue(
 	int32_t *min,
 	int32_t *max);
 
-// develop-branch-compatible signature: the SAS correction factor as a double
-// (interpolated from the same table, /1024.0). Unused on this branch; it
-// exists so the develop merge deletes their copy instead of conflicting.
-double FS_FlightParams_GetSASCorrectionFactor(int32_t hMSL);
-
 #endif /* FLIGHT_PARAMS_H_ */
