@@ -19,6 +19,7 @@ option(COVERAGE "Instrument firmware sources with gcov" ON)
 
 set(FIRMWARE_SOURCES
 	${FS_DIR}/audio_control.c
+	${FS_DIR}/audio_speech.c
 	${FS_DIR}/flight_params.c
 	${FS_DIR}/config.c
 	${FS_DIR}/nav.c

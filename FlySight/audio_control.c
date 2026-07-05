@@ -29,6 +29,7 @@
 #include "app_common.h"
 #include "audio.h"
 #include "audio_control.h"
+#include "audio_speech.h"
 #include "common.h"
 #include "config.h"
 #include "flight_params.h"
@@ -68,8 +69,7 @@ typedef struct
 
 	uint8_t g_suppress_tone;
 
-	char speech_buf[16];
-	char *speech_ptr;
+	FS_Speech_t speech;
 
 	volatile uint32_t tonePitch;
 	volatile int32_t  toneChirp;
@@ -206,239 +206,11 @@ static void getValues(
 	FS_FlightParams_GetValue(mode, current, config, 10000, val, min, max);
 }
 
-static char *numberToSpeech(
-	int32_t number,
-	char *ptr)
-{
-	// Adapted from https://stackoverflow.com/questions/2729752/converting-numbers-in-to-words-c-sharp
-
-    if (number == 0)
-	{
-		*(ptr++) = '0';
-		return ptr;
-	}
-
-    if (number < 0)
-	{
-		*(ptr++) = '-';
-        return numberToSpeech(-number, ptr);
-	}
-
-    if ((number / 1000) > 0)
-    {
-        ptr = numberToSpeech(number / 1000, ptr);
-		*(ptr++) = 'k';
-        number %= 1000;
-    }
-
-    if ((number / 100) > 0)
-    {
-        ptr = numberToSpeech(number / 100, ptr);
-		*(ptr++) = 'h';
-        number %= 100;
-    }
-
-    if (number > 0)
-    {
-		if (number < 10)
-		{
-			*(ptr++) = '0' + number;
-		}
-		else if (number < 20)
-		{
-			*(ptr++) = 't';
-			*(ptr++) = '0' + (number - 10);
-		}
-        else
-        {
-			*(ptr++) = 'x';
-			*(ptr++) = '0' + (number / 10);
-
-            if ((number % 10) > 0)
-				*(ptr++) = '0' + (number % 10);
-        }
-    }
-
-    return ptr;
-}
-
 static void speakValue(
 	FS_Config_Data_t *config,
 	FS_GNSS_Data_t *current)
 {
-	const int32_t velD = current->velD / 10;
-
-	uint16_t speed_mul = FS_FlightParams_GetSpeedMul(config, current->hMSL);
-	int32_t step_size, step;
-
-	char *end_ptr;
-
-	int32_t tVal;
-
-	switch (config->speech[state.cur_speech].units)
-	{
-	case FS_CONFIG_UNITS_KMH:
-		speed_mul = (uint16_t) (((uint32_t) speed_mul * 18204) / 65536);
-		break;
-	case FS_CONFIG_UNITS_MPH:
-		speed_mul = (uint16_t) (((uint32_t) speed_mul * 29297) / 65536);
-		break;
-	case FS_CONFIG_UNITS_KNOTS:
-		speed_mul = (uint16_t) (((uint32_t) speed_mul * 33713) / 65536);
-		break;
-	}
-
-	// Step 0: Initialize speech pointers, leaving room at the end for one unit character
-
-	state.speech_ptr = state.speech_buf + sizeof(state.speech_buf) - 1;
-	end_ptr = state.speech_ptr;
-
-	// Step 1: Get speech value with 2 decimal places
-
-	switch (config->speech[state.cur_speech].mode)
-	{
-	case FS_CONFIG_MODE_HORIZONTAL_SPEED:
-		state.speech_ptr = writeInt32ToBuf(state.speech_ptr, (current->gSpeed * 1024) / speed_mul, 2, 1, 0);
-		break;
-	case FS_CONFIG_MODE_VERTICAL_SPEED:
-		state.speech_ptr = writeInt32ToBuf(state.speech_ptr, (velD * 1024) / speed_mul, 2, 1, 0);
-		break;
-	case FS_CONFIG_MODE_GLIDE_RATIO:
-		if (velD != 0)
-		{
-			state.speech_ptr = writeInt32ToBuf(state.speech_ptr, 100 * (int32_t) current->gSpeed / velD, 2, 1, 0);
-		}
-		else
-		{
-			*(--state.speech_ptr) = '\0';
-		}
-		break;
-	case FS_CONFIG_MODE_INVERSE_GLIDE_RATIO:
-		if (current->gSpeed != 0)
-		{
-			state.speech_ptr = writeInt32ToBuf(state.speech_ptr, 100 * (int32_t) velD / current->gSpeed, 2, 1, 0);
-		}
-		else
-		{
-			*(--state.speech_ptr) = '\0';
-		}
-		break;
-	case FS_CONFIG_MODE_TOTAL_SPEED:
-		state.speech_ptr = writeInt32ToBuf(state.speech_ptr, (current->speed * 1024) / speed_mul, 2, 1, 0);
-		break;
-	case FS_CONFIG_MODE_DIRECTION_TO_DESTINATION:
-		//check if too far from destination for Nav, would indicate user error with Lat & Lon
-		if ((calcDistance(current->lat,current->lon,config->lat,config->lon) < config->max_dist) || (config->max_dist == 0))
-		{
-			//check if above height tone should be silenced
-			if ((current->hMSL > (config->end_nav+config->dz_elev)) || (config->end_nav == 0))
-			{
-				config->speech[state.cur_speech].decimals = 0;
-				tVal = calcDirection(current->lat,current->lon,config->lat,config->lon,current->heading);
-				state.speech_ptr = writeInt32ToBuf(state.speech_ptr, ABS(tVal)*100, 2, 1, 0);
-			}
-		}
-		break;
-	case FS_CONFIG_MODE_DISTANCE_TO_DESTINATION:
-		config->speech[state.cur_speech].decimals = 1;
-		tVal = calcDistance(current->lat,current->lon,config->lat,config->lon);  // returns metres
-		switch (config->speech[state.cur_speech].units)
-		{
-		case FS_CONFIG_UNITS_METERS:
-			tVal = tVal / 10;
-			break;
-		case FS_CONFIG_UNITS_FEET:
-			tVal = (tVal * 100) / 1609;
-			break;
-		case FS_CONFIG_UNITS_NM:
-			tVal = (tVal * 100) / 1852;
-			break;
-		}
-		tVal = tVal + 5; //for correct rounding when reducing to one decimal place
-		state.speech_ptr = writeInt32ToBuf(state.speech_ptr, tVal, 2, 1, 0);
-		break;
-	case FS_CONFIG_MODE_DIRECTION_TO_BEARING:
-		//check if above height tone should be silenced
-		if ((current->hMSL > (config->end_nav+config->dz_elev)) || (config->end_nav == 0))
-		{
-			config->speech[state.cur_speech].decimals = 0;
-			tVal = calcRelBearing(config->bearing,current->heading/100000);
-			state.speech_ptr = writeInt32ToBuf(state.speech_ptr, ABS(tVal)*100, 2, 1, 0);
-		}
-		break;
-	case FS_CONFIG_MODE_DIVE_ANGLE:
-		state.speech_ptr = writeInt32ToBuf(state.speech_ptr, 100 * atan2(velD, current->gSpeed) / M_PI * 180, 2, 1, 0);
-		break;
-	case FS_CONFIG_MODE_ALTITUDE:
-		if (config->speech[state.cur_speech].units == FS_CONFIG_UNITS_METERS)
-		{
-			step_size = 10000 * config->speech[state.cur_speech].decimals;
-		}
-		else
-		{
-			step_size = 3048 * config->speech[state.cur_speech].decimals;
-		}
-		step = ((current->hMSL - config->dz_elev) * 10 + step_size / 2) / step_size;
-		state.speech_ptr = state.speech_buf + 2;
-		state.speech_ptr = numberToSpeech(step * config->speech[state.cur_speech].decimals, state.speech_ptr);
-		end_ptr = state.speech_ptr;
-		state.speech_ptr = state.speech_buf + 2;
-		break;
-	}
-
-	// Step 1.5: Include label
-	if (config->num_speech > 1)
-	{
-		*(--state.speech_ptr) = config->speech[state.cur_speech].mode + 1;
-		*(--state.speech_ptr) = '>';
-	}
-
-	// Step 2: Truncate to the desired number of decimal places
-
-	if (config->speech[state.cur_speech].mode != FS_CONFIG_MODE_ALTITUDE)
-	{
-		if (config->speech[state.cur_speech].decimals == 0) end_ptr -= 4;
-		else end_ptr -= 3 - config->speech[state.cur_speech].decimals;
-	}
-
-	// Step 3: Add units if needed, e.g., *(end_ptr++) = 'k';
-
-	switch (config->speech[state.cur_speech].mode)
-	{
-	case FS_CONFIG_MODE_HORIZONTAL_SPEED:
-	case FS_CONFIG_MODE_VERTICAL_SPEED:
-	case FS_CONFIG_MODE_GLIDE_RATIO:
-	case FS_CONFIG_MODE_INVERSE_GLIDE_RATIO:
-	case FS_CONFIG_MODE_TOTAL_SPEED:
-	case FS_CONFIG_MODE_DIVE_ANGLE:
-		break;
-	case FS_CONFIG_MODE_DIRECTION_TO_DESTINATION:
-	case FS_CONFIG_MODE_DIRECTION_TO_BEARING:
-		if(tVal < 0)			*(end_ptr++) = 'l';
-		else if (tVal > 0)		*(end_ptr++) = 'r';
-		break;
-	case FS_CONFIG_MODE_DISTANCE_TO_DESTINATION:
-		switch (config->speech[state.cur_speech].units)
-		{
-		case FS_CONFIG_UNITS_METERS:
-			*(end_ptr++) = 'K';
-			break;
-		case FS_CONFIG_UNITS_FEET:
-			*(end_ptr++) = 'i';
-			break;
-		case FS_CONFIG_UNITS_NM:
-			*(end_ptr++) = 'n';
-			break;
-		}
-		break;
-	case FS_CONFIG_MODE_ALTITUDE:
-		*(end_ptr++) = (config->speech[state.cur_speech].units == FS_CONFIG_UNITS_METERS) ? 'm' : 'f';
-		break;
-	}
-
-	// Step 4: Terminate with a null
-
-	*(end_ptr++) = '\0';
+	FS_Speech_BuildValue(&state.speech, config, current, state.cur_speech);
 }
 
 static void updateAlarms(
@@ -502,7 +274,7 @@ static void updateAlarms(
 
 	if (suppress_tone && !state.g_suppress_tone)
 	{
-		*state.speech_ptr = '\0';
+		FS_Speech_Clear(&state.speech);
 		setRate(0);
 		FS_Audio_Stop();
 	}
@@ -539,7 +311,7 @@ static void updateAlarms(
 					break;
 				}
 
-				*state.speech_ptr = '\0';
+				FS_Speech_Clear(&state.speech);
 				break;
 			}
 		}
@@ -547,7 +319,7 @@ static void updateAlarms(
 		if ((config->alt_step > 0) &&
 		    (i == config->num_alarms) &&
 		    (state.prevHMSL - config->dz_elev >= ALT_MIN * 1000) &&
-		    (*state.speech_ptr == 0) &&
+		    !FS_Speech_HasPending(&state.speech) &&
 		    !(state.flags & FLAG_SAY_ALTITUDE) &&
 		    !suppress_alt)
 		{
@@ -555,11 +327,7 @@ static void updateAlarms(
 			    ABS(velD) >= config->threshold &&
 			    current->gSpeed >= config->hThreshold)
 			{
-				state.speech_ptr = state.speech_buf;
-				state.speech_ptr = numberToSpeech(step * config->alt_step, state.speech_ptr);
-				*(state.speech_ptr++) = (config->alt_units == FS_CONFIG_UNITS_METERS) ? 'm' : 'f';
-				*(state.speech_ptr++) = '\0';
-				state.speech_ptr = state.speech_buf;
+				FS_Speech_BuildAltStep(&state.speech, config, step);
 			}
 		}
 	}
@@ -645,7 +413,7 @@ static void updateTones(
 			if (config->sp_rate != 0 &&
 			    config->num_speech != 0 &&
 			    state.sp_counter >= config->sp_rate &&
-				(*state.speech_ptr == 0) &&
+				!FS_Speech_HasPending(&state.speech) &&
 				!(state.flags & FLAG_SAY_ALTITUDE))
 			{
 				for (i = 0; i < config->num_speech; ++i)
@@ -737,156 +505,13 @@ static void consumerTask(void)
 {
 	const FS_Config_Data_t *config = FS_Config_Get();
 
-	if (*state.speech_ptr)
+	if (FS_Speech_HasPending(&state.speech))
 	{
 		if (FS_Audio_IsIdle())
 		{
-			char filename[13];
-
 			state.toneHold = 1;
 
-			if (*state.speech_ptr == '-')
-			{
-				FS_Audio_Play("minus.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == '.')
-			{
-				FS_Audio_Play("dot.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'h')
-			{
-				FS_Audio_Play("00.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'k')
-			{
-				FS_Audio_Play("000.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'm')
-			{
-				FS_Audio_Play("meters.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'f')
-			{
-				FS_Audio_Play("feet.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 't')
-			{
-				++state.speech_ptr;
-				filename[0] = '1';
-				filename[1] = *state.speech_ptr;
-				filename[2] = '.';
-				filename[3] = 'w';
-				filename[4] = 'a';
-				filename[5] = 'v';
-				filename[6] = '\0';
-
-				FS_Audio_Play(filename, config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'x')
-			{
-				++state.speech_ptr;
-				filename[0] = *state.speech_ptr;
-				filename[1] = '0';
-				filename[2] = '.';
-				filename[3] = 'w';
-				filename[4] = 'a';
-				filename[5] = 'v';
-				filename[6] = '\0';
-
-				FS_Audio_Play(filename, config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == '>')
-			{
-				++state.speech_ptr;
-				switch ((*state.speech_ptr) - 1)
-				{
-					case 0:
-						FS_Audio_Play("horz.wav", config->sp_volume * 5);
-						break;
-					case 1:
-						FS_Audio_Play("vert.wav", config->sp_volume * 5);
-						break;
-					case 2:
-						FS_Audio_Play("glide.wav", config->sp_volume * 5);
-						break;
-					case 3:
-						FS_Audio_Play("iglide.wav", config->sp_volume * 5);
-						break;
-					case 4:
-						FS_Audio_Play("speed.wav", config->sp_volume * 5);
-						break;
-					case 5: // Direction to destination
-						FS_Audio_Play("directn.wav", config->sp_volume * 5);
-						break;
-					case 6: // Distance to destination
-						FS_Audio_Play("distance.wav", config->sp_volume * 5);
-						break;
-					case 7: // Direction to bearing
-						FS_Audio_Play("bearing.wav", config->sp_volume * 5);
-						break;
-					case 11:
-						FS_Audio_Play("dive.wav", config->sp_volume * 5);
-						break;
-					case 12:
-						FS_Audio_Play("alt.wav", config->sp_volume * 5);
-						break;
-				}
-			}
-			else if (*state.speech_ptr == 'l')
-			{
-				FS_Audio_Play("left.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'r')
-			{
-				FS_Audio_Play("right.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'i')
-			{
-				FS_Audio_Play("miles.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'K')
-			{
-				FS_Audio_Play("km.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'n')
-			{
-				FS_Audio_Play("knots.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'o')
-			{
-				FS_Audio_Play("oclock.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'a')
-			{
-				FS_Audio_Play("10.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'b')
-			{
-				FS_Audio_Play("11.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == 'c')
-			{
-				FS_Audio_Play("12.wav", config->sp_volume * 5);
-			}
-			else if (*state.speech_ptr == '/')
-			{
-				++state.speech_ptr;
-				FS_Audio_Play(state.speech_ptr, config->sp_volume * 5);
-				state.speech_ptr += strlen(state.speech_ptr) - 1;
-			}
-			else
-			{
-				filename[0] = *state.speech_ptr;
-				filename[1] = '.';
-				filename[2] = 'w';
-				filename[3] = 'a';
-				filename[4] = 'v';
-				filename[5] = '\0';
-
-				FS_Audio_Play(filename, config->sp_volume * 5);
-			}
-
-			++state.speech_ptr;
+			FS_Speech_PlayNext(&state.speech, config);
 		}
 	}
 	else
@@ -908,21 +533,8 @@ static void consumerTask(void)
 			FS_Audio_IsIdle())
 		{
 			state.flags &= ~FLAG_SAY_ALTITUDE;
-			state.speech_ptr = state.speech_buf;
 
-			if (config->alt_units == FS_CONFIG_UNITS_METERS)
-			{
-				state.speech_ptr = numberToSpeech((state.prevHMSL - config->dz_elev) / 1000, state.speech_ptr);
-				*(state.speech_ptr++) = 'm';
-			}
-			else
-			{
-				state.speech_ptr = numberToSpeech((state.prevHMSL - config->dz_elev) * 10 / 3048, state.speech_ptr);
-				*(state.speech_ptr++) = 'f';
-			}
-
-			*(state.speech_ptr++) = '\0';
-			state.speech_ptr = state.speech_buf;
+			FS_Speech_BuildGroundElev(&state.speech, config, state.prevHMSL);
 		}
 	}
 }
@@ -939,8 +551,6 @@ void FS_AudioControl_Init(void)
 	state.flags = 0;
 	state.prev_flags = 0;
 	state.g_suppress_tone = 0;
-	state.speech_buf[0] = '\0';
-	state.speech_ptr = state.speech_buf;
 	state.tonePitch = 0;
 	state.toneChirp = 0;
 	state.toneRate = 0;
@@ -972,17 +582,13 @@ void FS_AudioControl_Init(void)
 
 	if (config->init_mode == 1)
 	{
-		strncpy(state.speech_buf, "0123456789.-", sizeof(state.speech_buf));
+		FS_Speech_BuildInitDigits(&state.speech);
 	}
 	else if (config->init_mode == 2)
 	{
 		if (strlen(config->init_filename))
 		{
-			strncpy(state.speech_buf, "/", sizeof(state.speech_buf));
-			strncat(state.speech_buf, config->init_filename,
-					sizeof(state.speech_buf) - strlen(state.speech_buf) - 1);
-			strncat(state.speech_buf, ".wav",
-					sizeof(state.speech_buf) - strlen(state.speech_buf) - 1);
+			FS_Speech_BuildInitFile(&state.speech, config->init_filename);
 		}
 	}
 }

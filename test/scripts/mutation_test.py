@@ -20,8 +20,10 @@ from pathlib import Path
 TEST = Path(__file__).resolve().parent.parent
 SRC = TEST.parent / "FlySight" / "audio_control.c"
 # Some metric mutations (glide scale, SAS interpolation) were extracted to
-# flight_params.c in card A2; a mutant may name the file it patches.
+# flight_params.c in card A2; the speech encoders/labels/announcement scale
+# moved to audio_speech.c in card A3. A mutant may name the file it patches.
 FP = TEST.parent / "FlySight" / "flight_params.c"
+AS = TEST.parent / "FlySight" / "audio_speech.c"
 
 # (id, expected occurrence count, old, new, description[, file])
 # The optional 6th field is the source file to patch (default: audio_control.c).
@@ -45,9 +47,9 @@ MUTANTS = [
     ("M06", 1, "#define ALT_MIN         1500L",
                "#define ALT_MIN         150L",
      "ALT_MIN: altitude-mode floor 1500 -> 150 m"),
-    ("M07", 2, "* 10 + step_size / 2) / step_size",
+    ("M07", 1, "* 10 + step_size / 2) / step_size",
                "* 10 + step_size / 3) / step_size",
-     "alt step rounding: half-step -> third-step"),
+     "alt step rounding: half-step -> third-step", AS),
     ("M08", 1, "(config->windows[i].bottom + config->dz_elev <= current->hMSL)",
                "(config->windows[i].bottom + config->dz_elev > current->hMSL)",
      "silence window: bottom condition inverted (window never matches)"),
@@ -108,19 +110,19 @@ MUTANTS = [
      "speech period: counts twice as fast"),
     ("M26", 1, "(number < 20)",
                "(number < 19)",
-     "numberToSpeech: teens boundary (19)"),
-    ("M27", 1, "config->speech[state.cur_speech].mode + 1",
-               "config->speech[state.cur_speech].mode + 2",
-     "speech labels: wrong label index"),
-    ("M28", 1, "(state.prevHMSL - config->dz_elev) / 1000",
-               "(state.prevHMSL - config->dz_elev) / 100",
-     "first-fix altitude announcement: wrong scale"),
+     "numberToTokens: teens boundary (19)", AS),
+    ("M27", 1, "return TOK_LABEL_HORZ;",
+               "return TOK_LABEL_VERT;",
+     "speech labels: wrong label token", AS),
+    ("M28", 1, "(prevHMSL - config->dz_elev) / 1000",
+               "(prevHMSL - config->dz_elev) / 100",
+     "first-fix altitude announcement: wrong scale", AS),
     ("M29", 1, "config->init_mode == 1",
                "config->init_mode == 3",
      "Init_Mode 1: speech test disabled"),
     ("M30", 1, "tVal = tVal + 5;",
                "tVal = tVal;",
-     "distance speech: rounding offset dropped"),
+     "distance speech: rounding offset dropped", AS),
 ]
 
 

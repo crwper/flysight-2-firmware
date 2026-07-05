@@ -168,3 +168,79 @@ Verification observed:
   mutation_test.py          -> 30 killed, 0 needing attention
   fuzz_diff.py --minutes 2  -> 700 iters, 0 real diffs, 26 known-13,
                                28 shared-crash
+
+---
+
+## A3 — 2026-07-04 — SUCCESS
+
+Replaced the sentinel-char speech bytecode with a token queue in new
+FlySight/audio_speech.c/h (FS_SpeechToken_t enum + token->wav table +
+FS_Speech_t queue owned by audio_control's `state`). Deleted numberToSpeech,
+the speakValue char-buffer body, and the ~150-line consumerTask ladder;
+audio_control.c now just calls FS_Speech_Build*/HasPending/Clear/PlayNext.
+Value math (speeds, glide/iglide, direction/bearing/distance, dive, altitude,
+alt-step, ground-elev) is ported VERBATIM incl. the mode-12 Sp_Dec-0
+divide-by-zero (preserved for B2; shared-crash in the fuzzer). All 50 goldens
+byte-identical; fuzz_diff 3 min = 1126 iters, 0 real diffs (74 known-13, 39
+shared-crash); mutation 30 killed / 0 NO-MATCH.
+
+STOP conditions NOT triggered — and here is why, because it is subtle:
+I instrumented the frozen build first (temporary, reverted). QUIRKS #13's
+uninitialized tVal l/r suffix is WRITTEN to the buffer in the gated modes 5/7
+but is NEVER PLAYED in any scenario: the read cursor sits on the label token,
+whose next slot is buf[15] which the value path never touches (writeInt32ToBuf
+starts writing at buf[14]) so it stays the init-zeroed TOK_END and terminates
+the utterance before the cursor can reach the stale suffix. So speech-nav /
+speech-nav-gated play only the *legitimately-computed* ungated mode-7 suffix
+(deterministic, not stack garbage), and omitting the garbage entirely
+(dir_valid flag, no uninitialized read) is byte-identical for the goldens.
+Every gated-direction config also has End_Nav>0 or Max_Dist>0, i.e. it is in
+the fuzzer's known-13 bucket, so the residual divergence on Sp_Dec 1/3 gated
+(the only decimals where the byte arithmetic would actually voice garbage) is
+excluded there too. If a future stack-layout change ever makes garbage
+reachable, this reasoning breaks — but that is exactly the #13 fix (B4).
+
+Also found while grounding the nav gates: `end_nav`/`max_dist` are uint16_t
+(config.h), so End_Nav 300 -> *1000 -> 300000 wraps to 37856 mm; the gate
+silences nav features below ~37.8 m AGL, not 300 m as the scenario comment
+claims. Pre-existing; the goldens already bake it in; I use config->end_nav
+verbatim so it matches. Not my card to fix.
+
+QUIRKS #12 reproduction (mode 2/3 glide/iglide empty, NOT known-13 so the
+fuzzer byte-checks it): FS_Speech_BuildValue mirrors the legacy backward-write
++ `end_ptr -= (dec==0)?4:(3-dec)` truncation index arithmetic on the token
+buffer, so the pathology "falls out naturally" per the card. Deviation from
+the card's literal token design: the label is ONE token (not '>'+mode+1 two
+bytes). Verified this still reproduces #12 exactly: for Sp_Dec 1 the truncation
+terminator lands on the single label slot and nulls it -> whole utterance
+silent; Sp_Dec 0/2 leave the label -> label alone. Teens/tens are single
+tokens (NUM_10..19 / TENS_2..9) as the card wants; they only occur on the
+forward, non-truncated altitude/announce path so the width change is
+output-invariant.
+
+Mutation re-anchoring (mutation_test.py, allowed file; added an `AS` path):
+M26 teens boundary, M27 label index, M28 announcement scale, M30 distance
+rounding moved into audio_speech.c (file=AS). M27's old anchor
+(`...mode + 1`) no longer exists (labelToken() switch) so it now mutates
+`return TOK_LABEL_HORZ;`->VERT (mode 0, non-nav, well covered). M07 (alt-step
+rounding) was count-2 in audio_control.c; the two copies split across files and
+ONLY the audio_speech.c ALTITUDE copy is golden-covered (the updateAlarms copy
+survives on these tracks), so M07 is now count-1 file=AS. Final: 30/30.
+
+CMake: audio_speech.c added to FIRMWARE_SOURCES only (audio_sim; inherits the
+FS_COVERAGE-gated --coverage). NOT added to the audio_sim_ref source list —
+the frozen ref (audio_control_orig.c) is self-contained and must build without
+it; verified ref builds + passes 50/50 and has zero audio_speech .gcno.
+
+NOTE for the coverage card: the gcovr filter is still ".*audio_control", so
+the new audio_speech.c is OUTSIDE the measured set (same gap A2 flagged for
+flight_params.c). Widen the filter to include audio_speech before trusting a
+coverage number.
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe + audio_sim_ref.exe
+  run_tests.py              -> 50 passed, 0 failed, 0 new (live)
+  run_tests.py --exe (ref)  -> 50 passed, 0 failed, 0 new
+  mutation_test.py          -> 30 killed, 0 needing attention
+  fuzz_diff.py --minutes 3  -> 1126 iters, 0 real diffs, 74 known-13,
+                               39 shared-crash
