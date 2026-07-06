@@ -605,3 +605,27 @@ Verification observed:
   run_tests.py --exe (ref)  -> 50 passed, 0 failed, 0 new
   git diff -- test/golden/  -> EMPTY
   mutation_test.py          -> 33 killed, 0 NO-MATCH (M18 KILLED, 10 scenarios)
+
+[orchestrator] 2026-07-05 — A7 Phase A closeout reviewed and ACCEPTED
+(28fe6c5 + follow-up 6593cee). Independently verified: goldens
+byte-identical (empty diff vs HEAD~), 50/50 live+ref, const config (zero
+config writes), mutation 33/0 incl. the 3 new arbiter mutants
+(M31/M32/M33 each killed by a distinct golden), and the required
+120-minute fuzz = 3735 iters, 0 real diffs (275 known-13, 121
+shared-crash). Two review findings raised to Michael:
+  (1) Coverage was 99/99/78% branch with TWO uncovered REACHABLE
+      branches beyond the LEFT_RIGHT residue — audio_speech.c:131 (MINUS
+      for a negative speech value while climbing) and audio_control.c:771
+      (Alt_Step crossing skipped while speech queued). Both are required
+      behaviour the frozen goldens never hit; can't be simplified away;
+      covering needs Phase B scenarios. DECISION (Michael 2026-07-05):
+      accept as documented residue -> recorded as QUIRKS #20, with cover
+      notes added to cards B2 (MINUS) and B4 (alt-step-while-speech).
+  (2) A7 deleted FS_FlightParams_GetSASCorrectionFactor, which A2/BRIEF
+      §3 added on purpose for develop-branch-merge compat. DECISION:
+      RESTORE it (done in 6593cee, byte-identical to pre-A7) and exempt
+      this scaffolding from the 100%-coverage rule (QUIRKS #20 item b).
+Also noted (not blocking, card step-4 sanctioned): A7 removed a few
+unreachable defensive guards (arbiter if(name) NULL-check; renderer
+TOK_END/bounds/NULL guards) to reach the coverage target. Phase A is now
+COMPLETE.

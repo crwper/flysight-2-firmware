@@ -37,6 +37,11 @@ Remove the QUIRKS-#12-preservation special case introduced in A3.
 3. Update QUIRKS rows 12 and 13 → DONE (and delete the golden-
    instability caveat from #13).
 4. Update/replace mutation M30-adjacent anchors if touched.
+5. Coverage (QUIRKS #20): ensure a speech scenario exercises a negative
+   value while climbing (velD<0 vertical-speed/glide/dive) so the
+   `audio_speech.c` MINUS-token branch is covered — a Phase A residue
+   ratified for deferral to this card. If none of the re-blessed
+   scenarios hits it, extend one (or note it for C1's coverage re-check).
 
 ## Allowed files
 
