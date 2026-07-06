@@ -422,9 +422,13 @@ static void updateTones(
 		}
 		else
 		{
-			// QUIRKS #16 preserved (B3 fixes it): raw deg*1e5 heading passed to
-			// calcRelBearing, which expects plain degrees.
-			val_2 = ABS(calcRelBearing(config->bearing,current->heading));
+			// QUIRKS #16 (B3): scale the raw deg*1e5 heading down to plain
+			// degrees before calcRelBearing (which is degree arithmetic),
+			// matching every other caller (flight_params.c GetRateValue /
+			// GetValue, audio_speech.c). The rate path stays INTEGER
+			// (QUIRKS #5): current->heading is the int32 GNSS field, so the
+			// /100000 is an integer truncation identical to the other sites.
+			val_2 = ABS(calcRelBearing(config->bearing,current->heading/100000));
 			val_2 = 180-val_2;  //make inverse so faster rate indicates closer to bearing
 		}
 		min_2 = 0;

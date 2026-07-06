@@ -747,3 +747,59 @@ tone is correct. Recorded in QUIRKS #13. Michael also had me pre-amend
 B4 and B5 expected-impact (they will have analogous tone-hold side
 effects) and added a general Phase B checking rule to BRIEF §6: trace
 every added/removed utterance through the arbiter suppression rules.
+
+---
+
+## B3 — 2026-07-06 — SUCCESS
+
+Fixed QUIRKS #16. ONE code line: audio_control.c updateTones, the Mode_2==7
+(direction-to-bearing) RATE recalc else-branch (Mode != 7) now passes
+`current->heading/100000` to calcRelBearing instead of the raw deg*1e5 field,
+matching every other caller (flight_params.c GetRateValue line 185 / the
+speech GetValue, audio_speech.c line 356). Nothing remained to change in
+flight_params.c -- its DIRECTION_TO_BEARING case already scaled correctly; the
+bug lived ONLY in the updateTones recalc. The card's "automatic after B1"
+premise did NOT hold: B1 deliberately kept this rate path on the raw integer
+`current->heading` (QUIRKS #5 integer enclave, ratified permanent), so the
+scale had to be added by hand. The /100000 is an integer truncation on the
+int32 GNSS field -- bit-consistent with the other integer sites, rate enclave
+preserved.
+
+DEVIATION from the card DoD ("only the two listed goldens changed" implying
+BOTH change): only ONE golden changed -- tone-vert-bearing-rate.
+tone-bearing-north is provably BYTE-IDENTICAL and was NOT re-blessed. Its track
+has velE==0 in all 3792 rows, so heading == atan2(velE,velN) == exactly
+000.00000 deg throughout; raw and /100000 headings are both 0, so the fix is a
+no-op there. That scenario was purpose-built to PIN the heading==0 edge (max-rate
+preserved on northbound legs) -- it verifies the fix rather than exhibiting a
+diff. Did NOT fabricate a change (BRIEF §6, same call as B2's 3-not-4 goldens).
+
+tone-vert-bearing-rate diff (read fully before blessing): +482/-179 lines,
++303 net beeps, ALL BEEP lines, confined to the canopy region (t>=568.9); the
+pre-canopy climb+freefall region (heading==0, lines 1-1705) is byte-identical,
+0 PLAY events (Sp_Rate 0 -> no speech, no tone_hold interaction), END unchanged
+(760.200000). Pitch f0 (value_1, vertical speed) is identical where beeps align
+-- only the RATE (value_2) changed, un-pegged from Min_Rate to a proper sweep.
+
+GEOMETRY SANITY CHECK (bearing 270, 3 deg/s canopy spiral from ~572.4 s):
+ * t=597.4: track velN=0.523 velE=9.986 -> heading 87 deg (~due east, ~opposite
+   the bearing). calcRelBearing(270,87) = -177, val_2 = 180-177 = 3 (~Min) ->
+   expected rate ~107. Observed interval ~0.9 s = SLOWEST. Matches "slow when
+   opposite the bearing."
+ * t=658.6: track velN=0.105 velE=-9.999 -> heading 270.6 deg (~due west, AT the
+   bearing). calcRelBearing(270,270) = 0, val_2 = 180 (Max) -> rate 500. Observed
+   interval ~0.195 s = FASTEST. Matches "fast toward the bearing."
+ The full spiral sweeps fast<->slow with period 360 deg / 3 deg/s = 120 s: slow
+ nadirs at heading~90 (t~597, t~720), fast peak at heading~270 (t~659).
+
+Suite 50/50; git diff --stat golden = exactly tone-vert-bearing-rate (1 file).
+Mutation 33 killed / 0 NO-MATCH -- mutation_test.py UNTOUCHED (no anchor
+references the edited line/comment; only M14 touches val_2, in setTone's
+normalization, unrelated). QUIRKS #16 -> DONE. Differential fuzzer NOT used as a
+gate (frozen ref diverges by design post-B1).
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe (clean, no warnings)
+  run_tests.py              -> 50 passed, 0 failed, 0 new
+  git diff --stat golden    -> tone-vert-bearing-rate only (+482/-179)
+  mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)
