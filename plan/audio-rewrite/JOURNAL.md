@@ -575,3 +575,33 @@ Verification observed:
   mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)
   gcovr (widened, branch)   -> residue = LEFT_RIGHT (reserved) + 2 justified above
   fuzz_diff.py --minutes 3  -> 459 iters, 0 real diffs, 33 known-13, 17 shared-crash
+
+---
+
+## A7-followup (GetSAS restore) — 2026-07-05 — SUCCESS
+
+A7 GetSAS-restore follow-up, authorized by Michael after orchestrator
+review. Restored FS_FlightParams_GetSASCorrectionFactor to
+flight_params.c and its prototype+comment to flight_params.h, byte-for-byte
+as at 28fe6c5~1 (verified: git diff --no-index vs the pre-A7 blobs is
+empty). This helper is develop-branch-merge compat scaffolding: unused on
+this branch, it exists so the develop merge deletes their copy instead of
+conflicting. Per Michael's decision it is EXEMPT from the 100%-branch-
+coverage rule (intentionally unexercised); goldens stay byte-identical
+(git diff -- test/golden/ EMPTY).
+
+M18 handling: restoring the helper re-introduces a second textual copy of
+the SAS interpolation line, so the old bare-substring anchor would match
+twice (NO-MATCH). Re-anchored M18 in test/scripts/mutation_test.py by
+prefixing the old/new strings with the 3-tab indent that is unique to the
+live, golden-covered FS_FlightParams_GetSpeedMul copy (line 63); the
+unused GetSASCorrectionFactor copy has a 2-tab indent, so it is not
+matched. M18 still targets the live copy and stays KILLED. (mutation_test.py
+is in A7's allowed files.)
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe + audio_sim_ref.exe (clean)
+  run_tests.py              -> 50 passed, 0 failed, 0 new (live)
+  run_tests.py --exe (ref)  -> 50 passed, 0 failed, 0 new
+  git diff -- test/golden/  -> EMPTY
+  mutation_test.py          -> 33 killed, 0 NO-MATCH (M18 KILLED, 10 scenarios)

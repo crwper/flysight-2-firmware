@@ -122,11 +122,17 @@ MUTANTS = [
     ("M17", 1, "*val = scale * (int32_t) current->gSpeed / velD;",
                "*val = 1000 * (int32_t) current->gSpeed / velD;",
      "glide ratio tone scale: 10000 -> 1000", FP),
-    # M18 was count-2 (GetSpeedMul + the develop-compat GetSASCorrectionFactor);
-    # card A7 deleted the dead GetSASCorrectionFactor, so the live GetSpeedMul
-    # copy is now the only occurrence.
-    ("M18", 1, "speed_mul = y1 + ((y2 - y1) * j) / 1024;",
-               "speed_mul = y1 + ((y2 - y1) * j) / 1000;",
+    # M18: the SAS interpolation line appears twice in flight_params.c -- the
+    # live, golden-covered FS_FlightParams_GetSpeedMul copy (3-tab indent, inside
+    # config/else) and the develop-compat FS_FlightParams_GetSASCorrectionFactor
+    # copy (2-tab indent), which is intentionally unused on this branch and so is
+    # NOT exercised by any golden. Anchor on the 3-tab prefix so the mutation
+    # always targets the live copy (unique match, count 1); a mutation in the
+    # unused copy would survive and must not be the target. (Card A7 briefly
+    # re-anchored this to count 1 while GetSASCorrectionFactor was deleted; the
+    # A7 GetSAS-restore follow-up re-adds the second copy, hence the tab anchor.)
+    ("M18", 1, "\t\t\tspeed_mul = y1 + ((y2 - y1) * j) / 1024;",
+               "\t\t\tspeed_mul = y1 + ((y2 - y1) * j) / 1000;",
      "SAS interpolation: wrong divisor", FP),
     ("M19", 1, "(int32_t) (2 * config->rate);",
                "(int32_t) (3 * config->rate);",
