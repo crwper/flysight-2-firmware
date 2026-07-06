@@ -958,3 +958,45 @@ run was 30 killed / 3 needing attention, mutation_test.py not yet allowed:
     speech-cancel -- the exact behaviour this card removes -- so 0/51 goldens killed
     it; needed a real-alarm-mid-speech scenario (added above). I stopped and
     reported; Michael authorized the amended allowed files and this resolution.
+
+---
+
+## B6 — 2026-07-06 — SUCCESS
+
+Bookkeeping/verification card (QUIRKS #14): confirmed the legacy `'o'/'a'/'b'/'c'`
+speech routes (oclock/10/11/12 o'clock, FlySight-1 leftovers) did NOT survive A3's
+tokenization, and closed #14. NO firmware change (FlySight/* untouched). Suite 52/52.
+
+Grep evidence (from repo root):
+  Select-String -Path FlySight\audio_speech.c,FlySight\audio_control.c -Pattern 'oclock'
+    -> zero matches (both files).
+  Select-String ... -Pattern "'o'|'a'|'b'|'c'"  (char-route case labels)
+    -> zero matches. No `case 'o'/'a'/'b'/'c'` remnant anywhere in FlySight/.
+  Grep '\.wav' FlySight/audio_speech.c
+    -> the ONLY *.wav literals are the token->filename table (lines 43-78): NUM_0..19,
+       TENS_2..9, HUNDRED/THOUSAND, MINUS/DOT, UNIT_*, LABEL_*, SUFFIX_LEFT/RIGHT.
+       `10.wav`=TOK_NUM_10 (ten), `11.wav`=TOK_NUM_11 (teens token, required for
+       "eleven"), `12.wav`=TOK_NUM_12 -- all legitimate NUM_* entries, NOT the dead
+       10/11/12-o'clock routes. (Line 177 `"1X.wav"` is a code COMMENT; line 516 the
+       RAW_FILE ".wav" suffix concat.)
+  Grep '\.wav' FlySight/audio_control.c
+    -> only line 677, the RAW_FILE ".wav" suffix strncat -- no route literal.
+  Grep 'oclock' test/golden/  -> zero matches. No golden references oclock.wav.
+QUIRKS #14 -> DONE (evidence cited in the row).
+
+CONDITIONAL (QUIRKS #2) -- 11.wav asset has NOT landed. `ls TEMP/AUDIO/11.wav` ->
+No such file (10.wav and 12.wav ARE present). Per the card I did NOT bless anything:
+`alt-step-feet` is UNCHANGED, git diff -- test/golden/ is EMPTY, count stays 52.
+REMINDER FOR THE NEXT AGENT (QUIRKS #2 still open): when Michael's `11.wav` asset
+lands in TEMP/AUDIO, re-bless `test/golden/alt-step-feet.trace` -- the 11,000 ft
+"eleven" announcement flips PLAYFAIL->PLAY and downstream timestamps cascade; read
+the whole diff, confirm it is exactly that one PLAYFAIL->PLAY plus its cascade, then
+bless and mark QUIRKS #2 -> DONE. QUIRKS #2 row annotated with this pending state.
+
+No mutation run (no code change). Differential fuzzer NOT used (frozen ref diverges
+by design post-B1). Touched only test/QUIRKS.md + this journal.
+
+Verification observed:
+  run_tests.py              -> 52 passed, 0 failed, 0 new
+  git diff -- test/golden/  -> EMPTY (no golden blessed)
+  git diff -- FlySight/     -> EMPTY (no firmware change)
