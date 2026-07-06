@@ -1,0 +1,58 @@
+; alt-gate-mixed -- QUIRKS #17: only ALTITUDE indications wait for the
+; ground-elevation announcement; non-altitude speech does not.
+;
+; The track (gen_jump --vacc-poor 70) reports vAcc 30 m for the first 70 s
+; -- through a short ground roll and the first ~18 s of a fast climb that is
+; already ABOVE ALT_MIN (1500 m) -- then vAcc drops to 2 m. So the
+; say-altitude latch stays set until ~t=70, when the ground-elevation
+; announcement finally plays.
+;
+; Two rotating speech entries share the queue: Sp_Mode 1 (vertical speed,
+; a NON-altitude value) and Sp_Mode 12 (altitude). With Alt_Step set there
+; is also an altitude-step announcement source. The B4 pins are:
+;   * Sp_Mode 1 speech PLAYS during the poor-vAcc window, before the ground
+;     announcement -- non-altitude speech is never gated on the latch.
+;   * Sp_Mode 12 (altitude) speech AND the Alt_Step announcements produce
+;     NOTHING until AFTER the ground-elevation announcement (~t=70), even
+;     though the aircraft is already above ALT_MIN and moving fast enough to
+;     satisfy V_Thresh -- altitude indications wait for the confirmation.
+;     The gated Sp_Mode 12 slot is SKIPPED (rotation advances), so its turns
+;     do not stall the Sp_Mode 1 entry.
+;
+; Coverage (QUIRKS #20): after vAcc recovers, the fast climb and freefall
+; cross Alt_Step boundaries frequently while a periodic utterance is still
+; queued, exercising the "Alt_Step crossing skipped because speech is
+; pending" branch (audio_control.c:771).
+
+Model:     7
+Rate:      200
+
+Mode:      1     ; tone: vertical speed
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   2
+Sp_Volume: 6
+
+Sp_Mode:   1     ; vertical speed (non-altitude -- plays regardless of latch)
+Sp_Units:  1     ; mph
+Sp_Dec:    0
+
+Sp_Mode:   12    ; altitude (gated on the ground-elevation announcement)
+Sp_Units:  0     ; meters
+Sp_Dec:    1
+
+V_Thresh:  300   ; 3 m/s: gate opens on the climb
+H_Thresh:  0
+
+Use_SAS:   0
+
+DZ_Elev:   0
+
+Alt_Units: 0     ; meters
+Alt_Step:  100

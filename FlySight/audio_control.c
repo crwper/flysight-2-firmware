@@ -108,9 +108,10 @@ static const uint8_t suppression_table[ZONE_COUNT] =
 
 // Altitude-mode source: silence + alt-step suppression zones, the Alt_Step
 // announcement decision, and the say-altitude latch (old FLAG_SAY_ALTITUDE):
-// the ground-elevation announcement is pending until vAcc is good and it plays,
-// which blocks Alt_Step announcements AND all periodic speech (current
-// behaviour; the QUIRKS #17 refinement is B4, not here).
+// the ground-elevation announcement is pending until vAcc is good and it plays.
+// The latch gates only ALTITUDE indications (QUIRKS #17, B4): Alt_Step
+// announcements AND Sp_Mode-12 speech entries; non-altitude periodic speech
+// (vertical speed, glide, direction, distance...) plays regardless.
 typedef struct
 {
 	bool say_altitude;
@@ -332,8 +333,9 @@ static void setTone(
 
 // Periodic (rotational) speech: when the tone gate is open and the period has
 // elapsed, queue the next non-skipped utterance and rotate. Skips Sp_Mode 12
-// (altitude) entries below ALT_MIN, and (old behaviour) yields to a pending
-// ground-elevation announcement via the say-altitude latch.
+// (altitude) entries below ALT_MIN or while the ground-elevation announcement
+// is still pending (QUIRKS #17). Non-altitude speech is NOT gated on that
+// announcement -- it plays regardless.
 static void SpeechSource_MaybeSpeak(
 	const FS_Config_Data_t *config,
 	const FS_FlightData_t *fd,
@@ -344,13 +346,18 @@ static void SpeechSource_MaybeSpeak(
 	if (config->sp_rate != 0 &&
 	    config->num_speech != 0 &&
 	    state.speech_src.sp_counter >= config->sp_rate &&
-	    !FS_Speech_HasPending(&state.speech) &&
-	    !state.altmode.say_altitude)
+	    !FS_Speech_HasPending(&state.speech))
 	{
 		for (i = 0; i < config->num_speech; ++i)
 		{
+			// QUIRKS #17: only ALTITUDE (mode-12) entries wait for the ground-
+			// elevation announcement (say_altitude latch), exactly like the
+			// Alt_Step announcements. A gated altitude entry is SKIPPED and the
+			// rotation advances (like the ALT_MIN floor skip), NOT blocked, so a
+			// mixed rotation keeps voicing its non-altitude entries meanwhile.
 			if ((config->speech[state.speech_src.cur_speech].mode != FS_CONFIG_MODE_ALTITUDE) ||
-				(current->hMSL - config->dz_elev >= ALT_MIN * 1000))
+				((current->hMSL - config->dz_elev >= ALT_MIN * 1000) &&
+				 !state.altmode.say_altitude))
 			{
 				FS_Speech_BuildValue(&state.speech, config, fd, current, state.speech_src.cur_speech);
 				state.speech_src.cur_speech = (state.speech_src.cur_speech + 1) % config->num_speech;

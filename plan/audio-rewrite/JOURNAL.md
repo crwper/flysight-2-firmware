@@ -803,3 +803,77 @@ Verification observed:
   run_tests.py              -> 50 passed, 0 failed, 0 new
   git diff --stat golden    -> tone-vert-bearing-rate only (+482/-179)
   mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)
+
+---
+
+## B4 — 2026-07-06 — SUCCESS
+
+Implemented QUIRKS #17: the `say_altitude` latch now gates ONLY altitude
+indications (audio_control.c only). One code change in SpeechSource_MaybeSpeak:
+removed `!state.altmode.say_altitude` from the top-level guard (so non-altitude
+periodic speech is no longer blocked by a pending ground-elev announcement), and
+added `&& !state.altmode.say_altitude` to the Sp_Mode-12 (ALTITUDE) rotation
+play-condition so a gated altitude entry is SKIPPED and the rotation advances
+(exactly like the ALT_MIN floor skip, NOT blocking). The Alt_Step gate
+(`!say_altitude` in AltModeSource_Update) is unchanged -- alt-step announcements
+still wait. Alarms were already unconditional. Updated the AltModeSource_t /
+MaybeSpeak comments. Suite 51/51; mutation 33 killed / 0 NO-MATCH
+(mutation_test.py UNTOUCHED -- no anchor references the edited condition; M24's
+"sp_counter >= config->sp_rate &&" string is intact).
+
+alt-vacc-never re-blessed (read line-by-line before blessing): gains 35 PLAY
+events -- periodic vertical-speed (Sp_Mode 1) speech throughout the freefall/
+canopy, spoken as digit files, previously ZERO PLAY. Ground-elevation
+announcement and ALL step announcements remain absent (vAcc reports 30 m for the
+whole track, so say_altitude never clears -> mode-12/alt-step stay gated). First-
+fix beep (t=0.009763, f0=1760) byte-identical; END 760.200000 unchanged. Tone-
+hold side effect (ratified B2/#13): 27 tone beeps DISAPPEAR, and a checker
+confirmed ALL 27 removed beeps fall inside an added utterance's play window
+(every removal aligns with a new utterance; zero new beeps appear). No PLAYFAIL.
+
+alt-vacc-gate verified BYTE-IDENTICAL (empty golden diff) -- its vAcc recovers
+before flight so the ground announcement precedes everything. Full suite scan:
+of the 50 existing scenarios exactly one (alt-vacc-never) changed; the other 49
+are byte-identical -- every other track reaches vAccGood at the first sample, so
+the gate has no effect there.
+
+NEW scenario alt-gate-mixed (config.txt + gen_jump track, --vacc-poor 70): a fast
+climb (climb-rate 30) crosses ALT_MIN (1500 m) at t=52 while vAcc is still 30 m,
+so from t=52..70 the aircraft is above ALT_MIN yet the latch is still set. Two
+rotating speech entries (Sp_Mode 1 vertical speed + Sp_Mode 12 altitude), Sp_Rate
+2 s, Alt_Step 100 m. Pins (all confirmed in the trace before blessing): (1)
+Sp_Mode 1 speech PLAYS from t=2 through the poor window incl. above ALT_MIN --
+non-altitude speech is not gated; (2) NO alt.wav (mode-12), NO step announcement,
+NO ground announcement anywhere before ~t=70 even above ALT_MIN -- altitude
+indications wait; (3) at t=72 the ground-elevation announcement ("2100 meters",
+no label) fires FIRST once the queue drains, THEN the first mode-12 alt.wav at
+t=75 and step announcements during the fast descent. numberToSpeech "minus" for
+the climbing (negative) vertical speed appears too.
+
+COVERAGE (QUIRKS #20, card ask): audio_control.c is now 100% branch (189/189, was
+188/189 at A7). audio_control.c:802 -- the `else if (want_alt_step &&
+!FS_Speech_HasPending(...))` FALSE leg (Alt_Step crossing skipped because speech
+is already queued, old :771) -- is COVERED by alt-gate-mixed's frequent freefall
+step crossings while a periodic utterance is pending. Bonus: the same scenario's
+"minus.wav" covers the QUIRKS #20 item-(c) MINUS branch in audio_speech.c.
+Remaining widened-filter residue: audio_speech.c mode-12 Sp_Dec-0 skip (#19) +
+flight_params.c LEFT_RIGHT/GetSAS (#20 a/b) -- for C1 to re-confirm.
+
+GOTCHA for later cards: the ground-elevation announcement here fires at ALTITUDE
+(~2100 m), not on the ground, because vAcc first goes good mid-climb -- the
+say_altitude latch clears on first vAcc-good regardless of altitude, so
+BuildGroundElev voices the current altitude. That is the correct mechanism (the
+pin is only "altitude indications wait for THIS announcement"), just visually
+unusual in the trace. Also note gen_jump `--vacc-poor S` is ABSOLUTE time from
+t=0 (vAcc=30 for t<S), so to make mode-1 play in the poor window the window must
+overlap moving flight -- hence the fast climb.
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe (clean, no warnings)
+  run_tests.py              -> 51 passed, 0 failed, 0 new
+  git status golden         -> alt-vacc-never modified, alt-gate-mixed added, rest clean
+  git diff alt-vacc-gate    -> EMPTY (byte-identical)
+  gcovr (widened, branch)   -> audio_control.c 189/189 (100%, :802 covered)
+  mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)
+Note (unchanged from B1/B2): the differential fuzzer / audio_sim_ref is frozen OLD
+integer code and diverges from the new goldens by design -- NOT used as a gate.
