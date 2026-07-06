@@ -105,7 +105,7 @@ git -C .. show --stat HEAD                            # only the card's allowed 
 | B1-float-metrics | done | 75a3ba2 |
 | B2-skip-utterance | done | da8a19b |
 | B3-heading-scale | done | 1c97506 |
-| B4-altitude-gate | pending | |
+| B4-altitude-gate | done | d23fe39 |
 | B5-type0-alarms | pending | |
 | B6-dead-tokens | pending | |
 | B7-config-parser | pending | |
