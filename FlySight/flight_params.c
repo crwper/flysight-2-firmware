@@ -30,8 +30,6 @@
 
 #define ABS(a) (((a) < 0) ? -(a) : (a))
 
-#define INVALID_VALUE   INT32_MAX
-
 static const uint16_t sas_table[] =
 {
 	1024, 1077, 1135, 1197,
@@ -39,6 +37,31 @@ static const uint16_t sas_table[] =
 	1600, 1704, 1818, 1944
 };
 
+FS_FlightData_t FS_FlightData_FromGNSS(const FS_GNSS_Data_t *g)
+{
+	FS_FlightData_t fd;
+
+	fd.valid3d  = (g->gpsFix == 3);
+	fd.vAccGood = (g->vAcc < 10000);   // vAcc < 10 m
+
+	fd.lat = g->lat / 1.0e7;
+	fd.lon = g->lon / 1.0e7;
+
+	fd.alt     = g->hMSL   / 1000.0f;  // mm   -> m
+	fd.velD    = g->velD   / 1000.0f;  // mm/s -> m/s
+	fd.gSpeed  = g->gSpeed / 100.0f;   // cm/s -> m/s
+	fd.speed   = g->speed  / 100.0f;   // cm/s -> m/s
+	fd.heading = g->heading / 100000.0f; // deg*1e5 -> deg
+
+	return fd;
+}
+
+// SAS speed-scaling multiplier (base 1024). Kept in the ORIGINAL integer
+// arithmetic and shared by the tone rate path (must stay bit-identical --
+// QUIRKS #5) and the speech speed path (whose value the speech renderer then
+// rounds at the last step, so it shifts by at most +/-1 in the spoken digit).
+// This is the one SAS implementation for the module. The 1024 / interpolation
+// constants are the sanctioned rate-path / driver-boundary survivors.
 uint16_t FS_FlightParams_GetSpeedMul(const FS_Config_Data_t *config, int32_t hMSL)
 {
 	uint16_t speed_mul = 1024;
@@ -67,7 +90,7 @@ uint16_t FS_FlightParams_GetSpeedMul(const FS_Config_Data_t *config, int32_t hMS
 	return speed_mul;
 }
 
-void FS_FlightParams_GetValue(
+void FS_FlightParams_GetRateValue(
 	uint8_t mode,
 	const FS_GNSS_Data_t *current,
 	const FS_Config_Data_t *config,

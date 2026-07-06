@@ -180,7 +180,9 @@ typedef struct
 	ToneSpec_t        tone_slots[2];
 	volatile uint32_t tone_active;
 
-	// CHANGE_IN_VALUE_1 history (formerly function-local statics in updateTones)
+	// CHANGE_IN_VALUE_1 history (formerly function-local statics in updateTones).
+	// Integer value_1 in the rate path's scale (QUIRKS #5: the rate must stay
+	// bit-identical, so this stays integer even though pitch value_1 is float).
 	int32_t x0, x1, x2;
 
 	// Tone-rate accumulator (formerly function-local static in consumerTimer)
@@ -217,6 +219,13 @@ static void setChirp(uint32_t chirp)
 	toneDraft()->chirp = chirp;
 }
 
+// Tone emission. value_1 / value_2 keep the ORIGINAL integer metric so gating,
+// rate and clamps are byte-identical to the pre-B1 code (a continuous-float
+// metric would coarsen->smooth some pitches by far more than +/-1 Hz, e.g. the
+// dive angle old-truncated to whole degrees, and would drift the rate). The
+// ONLY B1 change on the tone path is the in-band pitch: the same integer ratio
+// is evaluated in float and ROUNDED to Hz at the last step, so a pitch differs
+// from the old truncation by at most +/-1 Hz and nothing else moves.
 static void setTone(
 	const FS_Config_Data_t *config,
 	int32_t val_1,
@@ -249,6 +258,9 @@ static void setTone(
 		}
 		else
 		{
+			// Rate accumulator stays integer AND bit-identical (QUIRKS #5): the
+			// value_2 rate path keeps the original integer arithmetic, so the
+			// free-running 0x10000 phase never drifts.
 			setRate(config->min_rate + (config->max_rate - config->min_rate) * (val_2 - min_2) / (max_2 - min_2));
 		}
 
@@ -298,7 +310,10 @@ static void setTone(
 		}
 		else
 		{
-			setPitch(TONE_MIN_PITCH + (TONE_MAX_PITCH - TONE_MIN_PITCH) * (val_1 - min_1) / (max_1 - min_1));
+			// In-band pitch: the ONLY float-derived driver output on the tone
+			// path. Same integer ratio as before, evaluated in float and rounded
+			// to Hz at the last step (was integer truncation).
+			setPitch((uint16_t) lroundf((float) TONE_MIN_PITCH + (float) (TONE_MAX_PITCH - TONE_MIN_PITCH) * (float) (val_1 - min_1) / (float) (max_1 - min_1)));
 			setChirp(0);
 		}
 	}
@@ -311,18 +326,6 @@ static void setTone(
 	#undef UNDER
 }
 
-static void getValues(
-	FS_GNSS_Data_t *current,
-	const FS_Config_Data_t *config,
-	uint8_t mode,
-	int32_t *val,
-	int32_t *min,
-	int32_t *max)
-{
-	// Tone path: glide/inverse-glide use a scale of 10000 (see flight_params).
-	FS_FlightParams_GetValue(mode, current, config, 10000, val, min, max);
-}
-
 // ===========================================================================
 //  Speech source
 // ===========================================================================
@@ -333,6 +336,7 @@ static void getValues(
 // ground-elevation announcement via the say-altitude latch.
 static void SpeechSource_MaybeSpeak(
 	const FS_Config_Data_t *config,
+	const FS_FlightData_t *fd,
 	const FS_GNSS_Data_t *current)
 {
 	uint8_t i;
@@ -348,7 +352,7 @@ static void SpeechSource_MaybeSpeak(
 			if ((config->speech[state.speech_src.cur_speech].mode != FS_CONFIG_MODE_ALTITUDE) ||
 				(current->hMSL - config->dz_elev >= ALT_MIN * 1000))
 			{
-				FS_Speech_BuildValue(&state.speech, config, current, state.speech_src.cur_speech);
+				FS_Speech_BuildValue(&state.speech, config, fd, current, state.speech_src.cur_speech);
 				state.speech_src.cur_speech = (state.speech_src.cur_speech + 1) % config->num_speech;
 				break;
 			}
@@ -378,14 +382,22 @@ static void SpeechSource_Tick(const FS_Config_Data_t *config)
 
 static void updateTones(
 	const FS_Config_Data_t *config,
-	FS_GNSS_Data_t *current)
+	const FS_FlightData_t *fd,
+	const FS_GNSS_Data_t *current)
 {
+	// Integer V/H-threshold gate kept byte-exact (cm/s), independent of the
+	// float value path.
 	const int32_t velD = current->velD / 10;
 
-	int32_t val_1 = INVALID_VALUE, min_1 = config->min, max_1 = config->max;
+	// The tone value_1 (pitch + gating) and value_2 (rate) stay in the ORIGINAL
+	// integer arithmetic (QUIRKS #5: the rate accumulator must be bit-identical
+	// or the free-running 0x10000 phase drifts; the pitch is re-rounded from
+	// this same integer value inside setTone). value_1 also feeds the
+	// magnitude/change-in-value rate modes below.
+	int32_t val_1 = INVALID_VALUE, min_1 = config->min,   max_1 = config->max;
 	int32_t val_2 = INVALID_VALUE, min_2 = config->min_2, max_2 = config->max_2;
 
-	getValues(current, config, config->mode, &val_1, &min_1, &max_1);
+	FS_FlightParams_GetRateValue(config->mode, current, config, 10000, &val_1, &min_1, &max_1);
 
 	if (config->mode_2 == FS_CONFIG_MODE_DIRECTION_TO_DESTINATION) // Direction to destination
 	{
@@ -410,6 +422,8 @@ static void updateTones(
 		}
 		else
 		{
+			// QUIRKS #16 preserved (B3 fixes it): raw deg*1e5 heading passed to
+			// calcRelBearing, which expects plain degrees.
 			val_2 = ABS(calcRelBearing(config->bearing,current->heading));
 			val_2 = 180-val_2;  //make inverse so faster rate indicates closer to bearing
 		}
@@ -418,7 +432,7 @@ static void updateTones(
 	}
 	else if (config->mode_2 == FS_CONFIG_MODE_MAGNITUDE_OF_VALUE_1)
 	{
-		getValues(current, config, config->mode, &val_2, &min_2, &max_2);
+		FS_FlightParams_GetRateValue(config->mode, current, config, 10000, &val_2, &min_2, &max_2);
 		if (val_2 != INVALID_VALUE)
 		{
 			val_2 = ABS(val_2);
@@ -441,7 +455,7 @@ static void updateTones(
 	}
 	else
 	{
-		getValues(current, config, config->mode_2, &val_2, &min_2, &max_2);
+		FS_FlightParams_GetRateValue(config->mode_2, current, config, 10000, &val_2, &min_2, &max_2);
 	}
 
 	if (!state.arb.tone_suppressed)
@@ -451,7 +465,7 @@ static void updateTones(
 		{
 			setTone(config, val_1, min_1, max_1, val_2, min_2, max_2);
 
-			SpeechSource_MaybeSpeak(config, current);
+			SpeechSource_MaybeSpeak(config, fd, current);
 		}
 		else
 		{
@@ -741,7 +755,13 @@ static void producerTask(void)
 	// Copy current GNSS sample to a local snapshot.
 	memcpy(&current, FS_GNSS_GetData(), sizeof(FS_GNSS_Data_t));
 
-	if (current.gpsFix == 3)
+	// The one and only GNSS -> SI conversion. valid3d / vAccGood fold the old
+	// FLAG_HAS_FIX / FLAG_VERTICAL_ACC tests; the float metric path works from
+	// `fd`, while the alarm/alt-step crossings keep the integer `current` so
+	// their threshold timing stays byte-exact.
+	const FS_FlightData_t fd = FS_FlightData_FromGNSS(&current);
+
+	if (fd.valid3d)
 	{
 		state.has_fix = true;
 
@@ -775,7 +795,7 @@ static void producerTask(void)
 			}
 		}
 
-		updateTones(&config, &current);
+		updateTones(&config, &fd, &current);
 
 		if (!state.startup.beep_done)
 		{
@@ -788,7 +808,7 @@ static void producerTask(void)
 		setRate(0);
 	}
 
-	state.vacc_good = (current.vAcc < 10000);
+	state.vacc_good = fd.vAccGood;
 
 	state.prev_has_fix = state.has_fix;
 	state.prevHMSL = current.hMSL;

@@ -629,3 +629,35 @@ Also noted (not blocking, card step-4 sanctioned): A7 removed a few
 unreachable defensive guards (arbiter if(name) NULL-check; renderer
 TOK_END/bounds/NULL guards) to reach the coverage target. Phase A is now
 COMPLETE.
+
+---
+
+## B1 — 2026-07-06 — SUCCESS
+
+Introduced FS_FlightData_t (SI floats; double lat/lon; valid3d=(gpsFix==3);
+vAccGood=(vAcc<10 m)) built in one function (FS_FlightData_FromGNSS); producer
+fix/vAcc gates now read fd. Collapsed the glide x10000/x100 split: speech glide
+is one dimensionless float ratio, speech dive a rounded float angle. Tone PITCH
+is now rounded from the metric ratio at the last step (was truncated) -> a pitch
+is old or old+1 (<=+/-1 Hz). Tone RATE/value_2/accumulator kept INTEGER and
+bit-identical (QUIRKS #5): FS_FlightParams_GetRateValue is the old integer
+GetValue verbatim, because a float rate drifts the 0x10000 phase and changes
+beep counts. Speech speeds keep the integer SAS+unit and only round the final
+value (full-float SAS shifted spoken speeds ~2 counts = out of bounds, rejected).
+Nav/distance/altitude speech + nav gates byte-exact; QUIRKS #16 heading preserved
+(B3). 33 goldens re-blessed (all pitch +1 / one .x5 speech flip; classification
+table reviewed + APPROVED by Michael 2026-07-06); 17 byte-identical. 50/50;
+mutation 33 killed / 0 NO-MATCH (M11/M12->FromGNSS, M15 float casts re-anchored).
+Note: the differential fuzzer/audio_sim_ref is frozen OLD integer code and now
+diverges from the new goldens BY DESIGN -- not used as a gate from B1 onward.
+
+[orchestrator] Mandatory-review card. Independently re-derived the diff
+classification programmatically (parsed every changed line in all 33 goldens vs
+HEAD): 3888 changed tone lines, GLOBAL (f0,f1) delta set == {(+1,+1)} exactly;
+the ONLY non-pitch changes are 6 lines in speech-invalid-cfg (one 4->5 .x5 digit
+flip + a <=29 ms / <1-GNSS-sample downstream cascade, one context-hmsl annotation
+crossing a sample tick); zero events added/removed anywhere; nothing
+unclassifiable. Confirmed double lat/lon, single FromGNSS builder, grep survivors
+all sanctioned (QUIRKS #5 rate path, #16 heading, #20 GetSAS). Michael APPROVED
+and ratified the integer rate/SAS enclave as PERMANENT policy -> BRIEF §5 Numbers
+paragraph updated accordingly. Committed by orchestrator after sign-off.

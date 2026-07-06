@@ -219,15 +219,22 @@ const char *FS_Speech_PlayNext(FS_Speech_t *sp)
 void FS_Speech_BuildValue(
 	FS_Speech_t *sp,
 	const FS_Config_Data_t *config,
+	const FS_FlightData_t *fd,
 	const FS_GNSS_Data_t *current,
 	uint8_t cur_speech)
 {
-	const int32_t velD = current->velD / 10;
-
 	const uint8_t  mode  = config->speech[cur_speech].mode;
 	const uint8_t  units = config->speech[cur_speech].units;
 	int32_t decimals = config->speech[cur_speech].decimals;
 
+	// Integer down-speed (cm/s) for the vertical-speed value and the glide
+	// zero-guard -- kept byte-exact so the empty/non-empty decision never moves.
+	const int32_t velD = current->velD / 10;
+
+	// SAS speed_mul stays INTEGER (base 1024) with the original integer unit
+	// ratios: floating them shifted spoken speeds by up to ~2 counts (a bug per
+	// the B1 bounds). The only B1 change on speeds is that the final value is
+	// ROUNDED (was truncated), so a spoken speed differs by at most +/-1.
 	uint16_t speed_mul = FS_FlightParams_GetSpeedMul(config, current->hMSL);
 	int32_t step_size, step;
 
@@ -260,19 +267,24 @@ void FS_Speech_BuildValue(
 	ptr = FS_SPEECH_QUEUE_SIZE - 1;
 	end = ptr;
 
-	// Step 1: Encode the value with 2 decimal places (or leave empty).
+	// Step 1: Encode the value with 2 decimal places (or leave empty). Speeds keep
+	// the original integer SAS arithmetic but ROUND the final value (was
+	// truncated); glide/inverse-glide/dive are the collapsed float SI metrics,
+	// rounded; nav/distance/altitude stay byte-exact integer (nav.c unchanged).
 	switch (mode)
 	{
 	case FS_CONFIG_MODE_HORIZONTAL_SPEED:
-		ptr = writeValueTokens(buf, ptr, (current->gSpeed * 1024) / speed_mul);
+		ptr = writeValueTokens(buf, ptr, (int32_t) lround((double) (current->gSpeed * 1024) / speed_mul));
 		break;
 	case FS_CONFIG_MODE_VERTICAL_SPEED:
-		ptr = writeValueTokens(buf, ptr, (velD * 1024) / speed_mul);
+		ptr = writeValueTokens(buf, ptr, (int32_t) lround((double) (velD * 1024) / speed_mul));
 		break;
 	case FS_CONFIG_MODE_GLIDE_RATIO:
 		if (velD != 0)
 		{
-			ptr = writeValueTokens(buf, ptr, 100 * (int32_t) current->gSpeed / velD);
+			// One dimensionless glide ratio (the old x100 speech / x10000 tone
+			// scale split is gone), spoken as a 2-decimal fixed point.
+			ptr = writeValueTokens(buf, ptr, (int32_t) lroundf(fd->gSpeed / fd->velD * 100.0f));
 		}
 		else
 		{
@@ -282,7 +294,7 @@ void FS_Speech_BuildValue(
 	case FS_CONFIG_MODE_INVERSE_GLIDE_RATIO:
 		if (current->gSpeed != 0)
 		{
-			ptr = writeValueTokens(buf, ptr, 100 * (int32_t) velD / current->gSpeed);
+			ptr = writeValueTokens(buf, ptr, (int32_t) lroundf(fd->velD / fd->gSpeed * 100.0f));
 		}
 		else
 		{
@@ -290,9 +302,11 @@ void FS_Speech_BuildValue(
 		}
 		break;
 	case FS_CONFIG_MODE_TOTAL_SPEED:
-		ptr = writeValueTokens(buf, ptr, (current->speed * 1024) / speed_mul);
+		ptr = writeValueTokens(buf, ptr, (int32_t) lround((double) (current->speed * 1024) / speed_mul));
 		break;
 	case FS_CONFIG_MODE_DIRECTION_TO_DESTINATION:
+		// Nav quantity (nav.c unchanged in B1); dir_val is an integer degree, so
+		// ABS(dir_val)*100 is exact -- byte-identical to the old code.
 		if ((calcDistance(current->lat, current->lon, config->lat, config->lon) < config->max_dist) ||
 		    (config->max_dist == 0))
 		{
@@ -307,6 +321,8 @@ void FS_Speech_BuildValue(
 		break;
 	case FS_CONFIG_MODE_DISTANCE_TO_DESTINATION:
 	{
+		// Distance is a nav quantity (calcDistance unchanged in B1); its integer
+		// unit arithmetic is preserved byte-for-byte.
 		int32_t tVal;
 		decimals = 1;
 		tVal = calcDistance(current->lat, current->lon, config->lat, config->lon);
@@ -336,9 +352,11 @@ void FS_Speech_BuildValue(
 		}
 		break;
 	case FS_CONFIG_MODE_DIVE_ANGLE:
-		ptr = writeValueTokens(buf, ptr, 100 * atan2(velD, current->gSpeed) / M_PI * 180);
+		ptr = writeValueTokens(buf, ptr, (int32_t) lroundf(atan2f(fd->velD, fd->gSpeed) / (float) M_PI * 180.0f * 100.0f));
 		break;
 	case FS_CONFIG_MODE_ALTITUDE:
+		// Altitude announcement uses the integer step arithmetic (like the
+		// alt-step / ground-elev builders), byte-identical.
 		if (units == FS_CONFIG_UNITS_METERS)
 		{
 			step_size = 10000 * decimals;

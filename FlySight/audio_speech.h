@@ -36,6 +36,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "flight_params.h"
 #include "gnss.h"
 
 // Utterance token alphabet. TOK_END == 0 is the queue terminator (mirrors the
@@ -115,6 +116,7 @@ const char *FS_Speech_PlayNext(FS_Speech_t *sp);
 // Utterance builders. Each fills the queue and rewinds the cursor to the start.
 void FS_Speech_BuildValue(FS_Speech_t *sp,
                           const FS_Config_Data_t *config,
+                          const FS_FlightData_t *fd,
                           const FS_GNSS_Data_t *current,
                           uint8_t cur_speech);
 void FS_Speech_BuildAltStep(FS_Speech_t *sp,

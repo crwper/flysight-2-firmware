@@ -133,8 +133,12 @@ announcement, other speech unaffected, alarms unconditional (B4);
 #10 window-edge interval convention: implementer's choice for simplest
 code; exact-edge golden diffs acceptable in Phase B with review.
 
-Numbers: `float` SI internally, `double` lat/lon, conversions only at
-the boundaries — but ONLY from card B1 onward.
+Numbers: `float` SI internally with `double` lat/lon; the tone-rate
+channel and SAS interpolation remain integer by design (QUIRKS #5 —
+rate feeds the phase-sensitive accumulator). Conversions only at the
+boundaries — but ONLY from card B1 onward. (Ratified with B1: the
+integer rate/SAS enclave is permanent policy, not a deviation; only tone
+PITCH and speech values are floated.)
 
 ## 6. Working agreements
 

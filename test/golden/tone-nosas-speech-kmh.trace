@@ -79,7 +79,7 @@
  567.541565  PLAY file=dot.wav dur=0.610 vol=10 hmsl=1056.738
  568.156685  PLAY file=0.wav dur=0.600 vol=10 hmsl=1023.738
  569.279525  BEEP f0=651 f1=651 ms=125 vol=10 hmsl=960.000
- 570.265670  BEEP f0=612 f1=612 ms=125 vol=10 hmsl=921.250
+ 570.265670  BEEP f0=613 f1=613 ms=125 vol=10 hmsl=921.250
  571.202997  PLAY file=4.wav dur=0.650 vol=10 hmsl=895.000
  571.857173  PLAY file=1.wav dur=0.560 vol=10 hmsl=885.250
  572.423475  PLAY file=dot.wav dur=0.610 vol=10 hmsl=880.000

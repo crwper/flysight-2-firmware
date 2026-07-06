@@ -42,7 +42,7 @@
  536.814823  PLAY file=dive.wav dur=0.750 vol=10 hmsl=2739.716
  537.566637  PLAY file=7.wav dur=0.690 vol=10 hmsl=2706.721
  538.259868  PLAY file=4.wav dur=0.650 vol=10 hmsl=2662.725
- 539.392472  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=2607.729
+ 539.392472  BEEP f0=360 f1=360 ms=125 vol=10 hmsl=2607.729
  539.519401  PLAY file=iglide.wav dur=1.090 vol=10 hmsl=2596.729
  540.612949  PLAY file=3.wav dur=0.560 vol=10 hmsl=2530.732
  541.179251  PLAY file=dot.wav dur=0.610 vol=10 hmsl=2508.733
@@ -69,7 +69,7 @@
  555.668760  PLAY file=dive.wav dur=0.750 vol=10 hmsl=1705.738
  556.420574  PLAY file=7.wav dur=0.690 vol=10 hmsl=1661.738
  557.113805  PLAY file=4.wav dur=0.650 vol=10 hmsl=1628.738
- 558.099951  BEEP f0=359 f1=359 ms=125 vol=10 hmsl=1573.738
+ 558.099951  BEEP f0=360 f1=360 ms=125 vol=10 hmsl=1573.738
  558.226880  PLAY file=iglide.wav dur=1.090 vol=10 hmsl=1562.738
  559.320428  PLAY file=3.wav dur=0.560 vol=10 hmsl=1507.738
  559.886730  PLAY file=dot.wav dur=0.610 vol=10 hmsl=1474.738

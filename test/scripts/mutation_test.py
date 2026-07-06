@@ -100,12 +100,14 @@ MUTANTS = [
     ("M10", 1, "if (ABS(velD) >= config->threshold &&",
                "if (ABS(velD) > config->threshold &&",
      "V_Thresh: boundary equality (tone gate)"),
-    ("M11", 1, "current.vAcc < 10000",
-               "current.vAcc < 100000",
-     "vAcc gate: 10 m -> 100 m"),
-    ("M12", 1, "current.gpsFix == 3",
-               "current.gpsFix >= 2",
-     "fix gate: accept 2D fix"),
+    # M11/M12 re-anchored in card B1: the fix / vAcc gates moved into
+    # FS_FlightData_FromGNSS (valid3d / vAccGood) in flight_params.c.
+    ("M11", 1, "g->vAcc < 10000",
+               "g->vAcc < 100000",
+     "vAcc gate: 10 m -> 100 m (FromGNSS)", FP),
+    ("M12", 1, "g->gpsFix == 3",
+               "g->gpsFix >= 2",
+     "fix gate: accept 2D fix (FromGNSS)", FP),
     ("M13", 1, "state.startup.beep_done = true;",
                ";",
      "first-fix beep: never marked done (repeats)"),
@@ -113,8 +115,10 @@ MUTANTS = [
     ("M14", 1, "(val_2 - min_2) / (max_2 - min_2))",
                "(val_2 - max_2) / (max_2 - min_2))",
      "rate interpolation: wrong origin"),
-    ("M15", 1, "(TONE_MAX_PITCH - TONE_MIN_PITCH) * (val_1 - min_1) / (max_1 - min_1))",
-               "(TONE_MAX_PITCH - TONE_MIN_PITCH) * (val_1 - min_1) / (max_1 - min_1 + 1))",
+    # M15 re-anchored in card B1: the in-band pitch is now rounded from a float
+    # ratio (was integer truncation), so the interpolation carries (float) casts.
+    ("M15", 1, "(float) (val_1 - min_1) / (float) (max_1 - min_1))",
+               "(float) (val_1 - min_1) / (float) (max_1 - min_1 + 1))",
      "pitch interpolation: off-by-one denominator"),
     ("M16", 2, "setChirp(TONE_MAX_PITCH - TONE_MIN_PITCH);",
                "setChirp(0);",
