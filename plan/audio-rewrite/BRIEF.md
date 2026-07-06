@@ -153,6 +153,12 @@ PITCH and speech values are floated.)
   False; see the A3 journal note.)
 - Read any trace before blessing it (Phase B), and explain every changed
   line in the commit message.
+- Phase B checking rule (learned at B2): whenever a card adds or removes
+  an utterance, TRACE it through the arbiter's suppression rules — an
+  added/removed utterance changes `tone_hold`, so tone beeps will
+  appear/disappear/shift around it. Such secondary tone diffs are
+  EXPECTED (ratified at B2); confirm each aligns with an utterance-window
+  change rather than treating it as a bug or an unexpected diff.
 - Keep the code style of the file you are in (tabs, brace style,
   FS_-prefixed naming, sparse comments explaining constraints only).
 - Journal discipline: one entry per commit attempt, format in

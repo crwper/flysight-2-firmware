@@ -732,3 +732,18 @@ Verification observed:
   mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)
 Note (unchanged from B1): the differential fuzzer / audio_sim_ref is frozen OLD
 integer code and diverges from the new goldens by design -- NOT used as a gate.
+
+[orchestrator] 2026-07-06 — B2 (da8a19b) verified and RATIFIED by Michael.
+Independently confirmed: exactly 3 goldens changed (speech-zero-div -5
+glide; speech-nav -4 gated directn/bearing; speech-nav-gated -84 gated
+directn AND +66 f0=220 beeps — verified all 66 additions are f0=220
+beeps, nothing else). speech-invalid-cfg correctly UNCHANGED (unknown-
+mode slot already fully silent; agent rightly did not fabricate a diff
+per BRIEF §6). 50/50; mutation 33/0; QUIRKS 12+13 -> DONE; scope clean.
+The +66 beeps are BEYOND the card's expected impact (a mandatory Phase B
+escalation) — Michael ratified: tone_hold only holds for audio that
+actually plays, and nav gating never gated tones, so unmasking the climb
+tone is correct. Recorded in QUIRKS #13. Michael also had me pre-amend
+B4 and B5 expected-impact (they will have analogous tone-hold side
+effects) and added a general Phase B checking rule to BRIEF §6: trace
+every added/removed utterance through the arbiter suppression rules.

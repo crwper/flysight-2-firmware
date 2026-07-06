@@ -18,7 +18,11 @@ like the existing ALT_MIN skip), not blocking.
 - `alt-vacc-never`: gains periodic vertical-speed speech throughout the
   jump (previously zero PLAY events); ground-elevation announcement and
   all step announcements remain absent (vAcc never improves). First-fix
-  beep unchanged.
+  beep unchanged. **Also (arbiter side effect, cf. B2/QUIRKS #13): each
+  newly-played utterance now holds the tone (`tone_hold`), so expect tone
+  beeps to DISAPPEAR around each added utterance. Confirm every such
+  removed beep aligns with an added utterance window; that is expected,
+  not a bug.**
 - `alt-vacc-gate`: UNCHANGED (announcement precedes everything there) —
   verify explicitly.
 - Check whether any other scenario has speech configured while the

@@ -13,7 +13,11 @@ longer silences the tone).
 
 - `alarm-type-none`: the speech cadence no longer clips at the 2000 m
   crossing; otherwise identical. (Its config has Win_Above/Below 0, so
-  no suppression-window change is visible there.)
+  no suppression-window change is visible there.) **Also (arbiter side
+  effect, cf. B2/QUIRKS #13): the no-longer-clipped speech now holds the
+  tone (`tone_hold`) longer, so tone beeps near the 2000 m crossing may
+  shift or disappear. Trace each such beep change to the extended
+  utterance window; expected, not a bug.**
 - Scan for any other scenario with a type-0 alarm: none exist today —
   confirm via grep over scenario configs.
 

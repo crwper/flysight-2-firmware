@@ -103,7 +103,7 @@ git -C .. show --stat HEAD                            # only the card's allowed 
 | A6-tone-handoff | done | de621dd (+20f0ba3 barrier) |
 | A7-cleanup | done | 28fe6c5 (+6593cee GetSAS restore) |
 | B1-float-metrics | done | 75a3ba2 |
-| B2-skip-utterance | pending | |
+| B2-skip-utterance | done | da8a19b |
 | B3-heading-scale | pending | |
 | B4-altitude-gate | pending | |
 | B5-type0-alarms | pending | |
