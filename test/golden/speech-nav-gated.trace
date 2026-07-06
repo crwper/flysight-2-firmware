@@ -2,35 +2,34 @@
 # config=config.txt track=track.csv tail=2.000
 # rtc_tick_ns=488191
    0.009763  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=0.000
-  10.007915  PLAY file=directn.wav dur=0.800 vol=10 hmsl=0.000
   11.384614  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=9.600
   12.370759  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=17.600
   13.005408  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=24.000
   13.757222  PLAY file=4.wav dur=0.650 vol=10 hmsl=28.800
   14.411398  PLAY file=5.wav dur=0.680 vol=10 hmsl=35.200
   15.094865  PLAY file=right.wav dur=0.700 vol=10 hmsl=40.000
-  16.002900  PLAY file=directn.wav dur=0.800 vol=10 hmsl=48.000
+  16.305579  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=49.600
   17.291725  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=57.600
   18.277871  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=65.600
   19.000393  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=72.000
   19.752207  PLAY file=4.wav dur=0.650 vol=10 hmsl=76.800
   20.406383  PLAY file=5.wav dur=0.680 vol=10 hmsl=83.200
   21.089851  PLAY file=right.wav dur=0.700 vol=10 hmsl=88.000
-  22.007650  PLAY file=directn.wav dur=0.800 vol=10 hmsl=96.000
+  22.212690  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=97.600
   23.198836  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=104.000
   24.184982  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=112.000
   25.005143  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=120.000
   25.756957  PLAY file=4.wav dur=0.650 vol=10 hmsl=124.800
   26.411133  PLAY file=5.wav dur=0.680 vol=10 hmsl=131.200
   27.094600  PLAY file=right.wav dur=0.700 vol=10 hmsl=136.000
-  28.002635  PLAY file=directn.wav dur=0.800 vol=10 hmsl=144.000
+  28.119801  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=144.000
   29.105947  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=152.000
   30.092093  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=160.000
   31.000128  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=168.000
   31.751942  PLAY file=4.wav dur=0.650 vol=10 hmsl=172.800
   32.406118  PLAY file=5.wav dur=0.680 vol=10 hmsl=179.200
   33.089585  PLAY file=right.wav dur=0.700 vol=10 hmsl=184.000
-  34.007385  PLAY file=directn.wav dur=0.800 vol=10 hmsl=192.000
+  34.026912  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=192.000
   35.013058  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=200.000
   35.999204  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=206.400
   36.985350  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=214.400
@@ -39,7 +38,6 @@
   38.518269  PLAY file=5.wav dur=0.680 vol=10 hmsl=227.200
   39.201737  PLAY file=right.wav dur=0.700 vol=10 hmsl=233.600
   39.934023  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=238.400
-  40.060953  PLAY file=directn.wav dur=0.800 vol=10 hmsl=240.000
   40.920169  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=246.400
   41.906315  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=254.400
   42.892461  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=262.400
@@ -48,7 +46,6 @@
   44.425381  PLAY file=5.wav dur=0.680 vol=10 hmsl=275.200
   45.108848  PLAY file=right.wav dur=0.700 vol=10 hmsl=280.000
   45.841134  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=286.400
-  46.007119  PLAY file=directn.wav dur=0.800 vol=10 hmsl=288.000
   46.827280  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=294.400
   47.813426  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=302.400
   48.799572  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=308.800
@@ -56,56 +53,56 @@
   49.756426  PLAY file=4.wav dur=0.650 vol=10 hmsl=316.800
   50.410602  PLAY file=5.wav dur=0.680 vol=10 hmsl=323.200
   51.094070  PLAY file=right.wav dur=0.700 vol=10 hmsl=328.000
-  52.002105  PLAY file=directn.wav dur=0.800 vol=10 hmsl=336.000
+  52.734391  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=340.800
   53.720537  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=348.800
   54.706683  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=356.800
   55.009361  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=360.000
   55.761176  PLAY file=4.wav dur=0.650 vol=10 hmsl=364.800
   56.415351  PLAY file=5.wav dur=0.680 vol=10 hmsl=371.200
   57.098819  PLAY file=right.wav dur=0.700 vol=10 hmsl=376.000
-  58.006854  PLAY file=directn.wav dur=0.800 vol=10 hmsl=384.000
+  58.641502  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=388.800
   59.627648  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=396.800
   60.613794  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=404.800
   61.004347  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=408.000
   61.756161  PLAY file=4.wav dur=0.650 vol=10 hmsl=412.800
   62.410337  PLAY file=5.wav dur=0.680 vol=10 hmsl=419.200
   63.093804  PLAY file=right.wav dur=0.700 vol=10 hmsl=424.000
-  64.001840  PLAY file=directn.wav dur=0.800 vol=10 hmsl=432.000
+  64.548614  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=435.200
   65.534759  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=443.200
   66.520905  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=451.200
   67.009096  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=456.000
   67.760910  PLAY file=4.wav dur=0.650 vol=10 hmsl=460.800
   68.415086  PLAY file=5.wav dur=0.680 vol=10 hmsl=467.200
   69.098554  PLAY file=right.wav dur=0.700 vol=10 hmsl=472.000
-  70.006589  PLAY file=directn.wav dur=0.800 vol=10 hmsl=480.000
+  70.455725  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=483.200
   71.441870  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=491.200
   72.418252  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=499.200
   73.004082  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=504.000
   73.755896  PLAY file=4.wav dur=0.650 vol=10 hmsl=508.800
   74.410072  PLAY file=5.wav dur=0.680 vol=10 hmsl=515.200
   75.093539  PLAY file=right.wav dur=0.700 vol=10 hmsl=520.000
-  76.001574  PLAY file=directn.wav dur=0.800 vol=10 hmsl=528.000
+  76.362836  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=529.600
   77.348982  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=537.600
   78.325364  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=545.600
   79.008831  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=552.000
   79.760645  PLAY file=4.wav dur=0.650 vol=10 hmsl=556.800
   80.414821  PLAY file=5.wav dur=0.680 vol=10 hmsl=563.200
   81.098288  PLAY file=right.wav dur=0.700 vol=10 hmsl=568.000
-  82.006324  PLAY file=directn.wav dur=0.800 vol=10 hmsl=576.000
+  82.269947  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=577.600
   83.256093  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=585.600
   84.232475  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=593.600
   85.003816  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=600.000
   85.755631  PLAY file=4.wav dur=0.650 vol=10 hmsl=604.800
   86.409807  PLAY file=5.wav dur=0.680 vol=10 hmsl=611.200
   87.093274  PLAY file=right.wav dur=0.700 vol=10 hmsl=616.000
-  88.001309  PLAY file=directn.wav dur=0.800 vol=10 hmsl=624.000
+  88.177058  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=624.000
   89.153440  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=632.000
   90.139586  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=640.000
   91.008566  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=648.000
   91.760380  PLAY file=4.wav dur=0.650 vol=10 hmsl=652.800
   92.414556  PLAY file=5.wav dur=0.680 vol=10 hmsl=659.200
   93.098023  PLAY file=right.wav dur=0.700 vol=10 hmsl=664.000
-  94.006058  PLAY file=directn.wav dur=0.800 vol=10 hmsl=672.000
+  94.084169  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=672.000
   95.060551  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=680.000
   96.046697  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=688.000
   97.003551  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=696.000
@@ -113,7 +110,6 @@
   98.409541  PLAY file=5.wav dur=0.680 vol=10 hmsl=707.200
   99.093009  PLAY file=right.wav dur=0.700 vol=10 hmsl=712.000
   99.991280  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=718.400
- 100.118210  PLAY file=directn.wav dur=0.800 vol=10 hmsl=720.000
  100.967662  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=726.400
  101.953808  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=734.400
  102.939954  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=742.400
@@ -122,7 +118,6 @@
  104.472874  PLAY file=5.wav dur=0.680 vol=10 hmsl=755.200
  105.156341  PLAY file=right.wav dur=0.700 vol=10 hmsl=760.000
  105.888627  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=766.400
- 106.015557  PLAY file=directn.wav dur=0.800 vol=10 hmsl=768.000
  106.874773  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=774.400
  107.860919  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=782.400
  108.847065  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=790.400
@@ -131,63 +126,63 @@
  110.409276  PLAY file=5.wav dur=0.680 vol=10 hmsl=803.200
  111.092743  PLAY file=right.wav dur=0.700 vol=10 hmsl=808.000
  111.795739  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=812.800
- 112.000779  PLAY file=directn.wav dur=0.800 vol=10 hmsl=816.000
+ 112.781884  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=820.800
  113.768030  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=828.800
  114.754176  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=836.800
  115.008035  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=840.000
  115.759849  PLAY file=4.wav dur=0.650 vol=10 hmsl=844.800
  116.414025  PLAY file=5.wav dur=0.680 vol=10 hmsl=851.200
  117.097493  PLAY file=right.wav dur=0.700 vol=10 hmsl=856.000
- 118.005528  PLAY file=directn.wav dur=0.800 vol=10 hmsl=864.000
+ 118.688995  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=868.800
  119.675141  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=876.800
  120.661287  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=884.800
  121.003021  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=888.000
  121.754835  PLAY file=4.wav dur=0.650 vol=10 hmsl=892.800
  122.409011  PLAY file=5.wav dur=0.680 vol=10 hmsl=899.200
  123.092478  PLAY file=right.wav dur=0.700 vol=10 hmsl=904.000
- 124.000514  PLAY file=directn.wav dur=0.800 vol=10 hmsl=912.000
+ 124.596107  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=915.200
  125.582252  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=923.200
  126.568398  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=931.200
  127.007770  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=936.000
  127.759584  PLAY file=4.wav dur=0.650 vol=10 hmsl=940.800
  128.413760  PLAY file=5.wav dur=0.680 vol=10 hmsl=947.200
  129.097228  PLAY file=right.wav dur=0.700 vol=10 hmsl=952.000
- 130.005263  PLAY file=directn.wav dur=0.800 vol=10 hmsl=960.000
+ 130.503218  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=963.200
  131.489363  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=971.200
  132.475509  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=979.200
  133.002756  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=984.000
  133.754570  PLAY file=4.wav dur=0.650 vol=10 hmsl=988.800
  134.408746  PLAY file=5.wav dur=0.680 vol=10 hmsl=995.200
  135.092213  PLAY file=right.wav dur=0.700 vol=10 hmsl=1000.000
- 136.000248  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1008.000
+ 136.410329  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1011.200
  137.396475  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1017.600
  138.382620  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1025.600
  139.007505  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1032.000
  139.759319  PLAY file=4.wav dur=0.650 vol=10 hmsl=1036.800
  140.413495  PLAY file=5.wav dur=0.680 vol=10 hmsl=1043.200
  141.096962  PLAY file=right.wav dur=0.700 vol=10 hmsl=1048.000
- 142.004998  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1056.000
+ 142.317440  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1057.600
  143.303586  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1065.600
  144.289731  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1073.600
  145.002490  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1080.000
  145.754304  PLAY file=4.wav dur=0.650 vol=10 hmsl=1084.800
  146.408480  PLAY file=5.wav dur=0.680 vol=10 hmsl=1091.200
  147.091948  PLAY file=right.wav dur=0.700 vol=10 hmsl=1096.000
- 148.009747  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1104.000
+ 148.224551  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1105.600
  149.210697  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1113.600
  150.196843  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1120.000
  151.007240  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1128.000
  151.759054  PLAY file=4.wav dur=0.650 vol=10 hmsl=1132.800
  152.413230  PLAY file=5.wav dur=0.680 vol=10 hmsl=1139.200
  153.096697  PLAY file=right.wav dur=0.700 vol=10 hmsl=1144.000
- 154.004732  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1152.000
+ 154.131662  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1152.000
  155.117808  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1160.000
  156.103954  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1168.000
  157.002225  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1176.000
  157.754039  PLAY file=4.wav dur=0.650 vol=10 hmsl=1180.800
  158.408215  PLAY file=5.wav dur=0.680 vol=10 hmsl=1187.200
  159.091683  PLAY file=right.wav dur=0.700 vol=10 hmsl=1192.000
- 160.009482  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1200.000
+ 160.038773  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1200.000
  161.024919  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1208.000
  162.001301  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1216.000
  162.987447  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1222.400
@@ -196,7 +191,6 @@
  164.520367  PLAY file=5.wav dur=0.680 vol=10 hmsl=1235.200
  165.203834  PLAY file=right.wav dur=0.700 vol=10 hmsl=1241.600
  165.945884  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1246.400
- 166.072814  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1248.000
  166.932030  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1254.400
  167.908412  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1262.400
  168.894558  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1270.400
@@ -205,7 +199,6 @@
  170.427478  PLAY file=5.wav dur=0.680 vol=10 hmsl=1283.200
  171.110945  PLAY file=right.wav dur=0.700 vol=10 hmsl=1288.000
  171.852995  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1294.400
- 172.009216  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1296.000
  172.839141  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1302.400
  173.815523  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1310.400
  174.801669  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1318.400
@@ -213,56 +206,56 @@
  175.758523  PLAY file=4.wav dur=0.650 vol=10 hmsl=1324.800
  176.412699  PLAY file=5.wav dur=0.680 vol=10 hmsl=1331.200
  177.096167  PLAY file=right.wav dur=0.700 vol=10 hmsl=1336.000
- 178.004202  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1344.000
+ 178.746252  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1348.800
  179.722634  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1356.800
  180.708780  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1364.800
  181.001695  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1368.000
  181.753509  PLAY file=4.wav dur=0.650 vol=10 hmsl=1372.800
  182.407685  PLAY file=5.wav dur=0.680 vol=10 hmsl=1379.200
  183.091152  PLAY file=right.wav dur=0.700 vol=10 hmsl=1384.000
- 184.008951  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1392.000
+ 184.643600  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1396.800
  185.629745  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1404.800
  186.615891  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1412.800
  187.006444  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1416.000
  187.758258  PLAY file=4.wav dur=0.650 vol=10 hmsl=1420.800
  188.412434  PLAY file=5.wav dur=0.680 vol=10 hmsl=1427.200
  189.095901  PLAY file=right.wav dur=0.700 vol=10 hmsl=1432.000
- 190.003937  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1440.000
+ 190.550711  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1443.200
  191.536856  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1451.200
  192.523002  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1459.200
  193.001429  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1464.000
  193.753244  PLAY file=4.wav dur=0.650 vol=10 hmsl=1468.800
  194.407420  PLAY file=5.wav dur=0.680 vol=10 hmsl=1475.200
  195.090887  PLAY file=right.wav dur=0.700 vol=10 hmsl=1480.000
- 196.008686  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1488.000
+ 196.457822  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1491.200
  197.443968  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1499.200
  198.430113  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1507.200
  199.006179  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1512.000
  199.757993  PLAY file=4.wav dur=0.650 vol=10 hmsl=1516.800
  200.412169  PLAY file=5.wav dur=0.680 vol=10 hmsl=1523.200
  201.095636  PLAY file=right.wav dur=0.700 vol=10 hmsl=1528.000
- 202.003671  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1536.000
+ 202.364933  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1537.600
  203.351079  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1545.600
  204.337224  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1553.600
  205.001164  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1560.000
  205.752978  PLAY file=4.wav dur=0.650 vol=10 hmsl=1564.800
  206.407154  PLAY file=5.wav dur=0.680 vol=10 hmsl=1571.200
  207.090622  PLAY file=right.wav dur=0.700 vol=10 hmsl=1576.000
- 208.008421  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1584.000
+ 208.272044  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1585.600
  209.258190  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1593.600
  210.244336  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1601.600
  211.005914  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1608.000
  211.757728  PLAY file=4.wav dur=0.650 vol=10 hmsl=1612.800
  212.411904  PLAY file=5.wav dur=0.680 vol=10 hmsl=1619.200
  213.095371  PLAY file=right.wav dur=0.700 vol=10 hmsl=1624.000
- 214.003406  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1632.000
+ 214.179155  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1632.000
  215.165301  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1640.000
  216.151447  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1648.000
  217.000899  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1656.000
  217.752713  PLAY file=4.wav dur=0.650 vol=10 hmsl=1660.800
  218.406889  PLAY file=5.wav dur=0.680 vol=10 hmsl=1667.200
  219.090356  PLAY file=right.wav dur=0.700 vol=10 hmsl=1672.000
- 220.008156  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1680.000
+ 220.086266  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1680.000
  221.072412  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1688.000
  222.058558  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1696.000
  223.005648  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1704.000
@@ -270,7 +263,6 @@
  224.411638  PLAY file=5.wav dur=0.680 vol=10 hmsl=1715.200
  225.095106  PLAY file=right.wav dur=0.700 vol=10 hmsl=1720.000
  225.993377  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1726.400
- 226.120307  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1728.000
  226.979523  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1734.400
  227.965669  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1742.400
  228.951815  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1750.400
@@ -279,7 +271,6 @@
  230.484734  PLAY file=5.wav dur=0.680 vol=10 hmsl=1763.200
  231.168202  PLAY file=right.wav dur=0.700 vol=10 hmsl=1768.000
  231.900488  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1774.400
- 232.027418  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1776.000
  232.886634  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1782.400
  233.872780  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1790.400
  234.858926  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1798.400
@@ -288,63 +279,63 @@
  236.411373  PLAY file=5.wav dur=0.680 vol=10 hmsl=1811.200
  237.094841  PLAY file=right.wav dur=0.700 vol=10 hmsl=1816.000
  237.807599  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1822.400
- 238.002876  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1824.000
+ 238.793745  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1828.800
  239.779891  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1836.800
  240.756273  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1844.800
  241.000369  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1848.000
  241.752183  PLAY file=4.wav dur=0.650 vol=10 hmsl=1852.800
  242.406359  PLAY file=5.wav dur=0.680 vol=10 hmsl=1859.200
  243.089826  PLAY file=right.wav dur=0.700 vol=10 hmsl=1864.000
- 244.007625  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1872.000
+ 244.700856  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1876.800
  245.687002  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1884.800
  246.663384  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1892.800
  247.005118  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1896.000
  247.756932  PLAY file=4.wav dur=0.650 vol=10 hmsl=1900.800
  248.411108  PLAY file=5.wav dur=0.680 vol=10 hmsl=1907.200
  249.094575  PLAY file=right.wav dur=0.700 vol=10 hmsl=1912.000
- 250.002611  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1920.000
+ 250.607967  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1924.800
  251.594113  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1931.200
  252.570495  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1939.200
  253.000103  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1944.000
  253.751917  PLAY file=4.wav dur=0.650 vol=10 hmsl=1948.800
  254.406093  PLAY file=5.wav dur=0.680 vol=10 hmsl=1955.200
  255.089561  PLAY file=right.wav dur=0.700 vol=10 hmsl=1960.000
- 256.007360  PLAY file=directn.wav dur=0.800 vol=10 hmsl=1968.000
+ 256.515079  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1971.200
  257.491461  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1979.200
  258.477606  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=1987.200
  259.004853  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=1992.000
  259.756667  PLAY file=4.wav dur=0.650 vol=10 hmsl=1996.800
  260.410843  PLAY file=5.wav dur=0.680 vol=10 hmsl=2003.200
  261.094310  PLAY file=right.wav dur=0.700 vol=10 hmsl=2008.000
- 262.002345  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2016.000
+ 262.422190  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2019.200
  263.398572  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2025.600
  264.384717  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2033.600
  265.009602  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2040.000
  265.761416  PLAY file=4.wav dur=0.650 vol=10 hmsl=2044.800
  266.415592  PLAY file=5.wav dur=0.680 vol=10 hmsl=2051.200
  267.099059  PLAY file=right.wav dur=0.700 vol=10 hmsl=2056.000
- 268.007095  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2064.000
+ 268.329301  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2065.600
  269.305683  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2073.600
  270.291829  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2081.600
  271.004587  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2088.000
  271.756402  PLAY file=4.wav dur=0.650 vol=10 hmsl=2092.800
  272.410578  PLAY file=5.wav dur=0.680 vol=10 hmsl=2099.200
  273.094045  PLAY file=right.wav dur=0.700 vol=10 hmsl=2104.000
- 274.002080  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2112.000
+ 274.226648  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2113.600
  275.212794  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2121.600
  276.198940  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2128.000
  277.009337  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2136.000
  277.761151  PLAY file=4.wav dur=0.650 vol=10 hmsl=2140.800
  278.415327  PLAY file=5.wav dur=0.680 vol=10 hmsl=2147.200
  279.098794  PLAY file=right.wav dur=0.700 vol=10 hmsl=2152.000
- 280.006829  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2160.000
+ 280.133759  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2160.000
  281.119905  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2168.000
  282.106051  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2176.000
  283.004322  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2184.000
  283.756136  PLAY file=4.wav dur=0.650 vol=10 hmsl=2188.800
  284.410312  PLAY file=5.wav dur=0.680 vol=10 hmsl=2195.200
  285.093780  PLAY file=right.wav dur=0.700 vol=10 hmsl=2200.000
- 286.001815  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2208.000
+ 286.040870  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2208.000
  287.027016  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2216.000
  288.013162  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2224.000
  288.999308  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2230.400
@@ -353,7 +344,6 @@
  290.532227  PLAY file=5.wav dur=0.680 vol=10 hmsl=2243.200
  291.215695  PLAY file=right.wav dur=0.700 vol=10 hmsl=2249.600
  291.947981  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2254.400
- 292.074911  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2256.000
  292.934127  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2262.400
  293.920273  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2270.400
  294.906419  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2278.400
@@ -362,7 +352,6 @@
  296.439339  PLAY file=5.wav dur=0.680 vol=10 hmsl=2291.200
  297.122806  PLAY file=right.wav dur=0.700 vol=10 hmsl=2296.000
  297.855092  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2302.400
- 298.001550  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2304.000
  298.841238  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2310.400
  299.827384  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2318.400
  300.813530  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2326.400
@@ -370,56 +359,56 @@
  301.760620  PLAY file=4.wav dur=0.650 vol=10 hmsl=2332.800
  302.414796  PLAY file=5.wav dur=0.680 vol=10 hmsl=2339.200
  303.098264  PLAY file=right.wav dur=0.700 vol=10 hmsl=2344.000
- 304.006299  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2352.000
+ 304.748349  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2356.800
  305.734495  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2364.800
  306.720641  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2372.800
  307.003792  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2376.000
  307.755606  PLAY file=4.wav dur=0.650 vol=10 hmsl=2380.800
  308.409782  PLAY file=5.wav dur=0.680 vol=10 hmsl=2387.200
  309.093249  PLAY file=right.wav dur=0.700 vol=10 hmsl=2392.000
- 310.001285  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2400.000
+ 310.655460  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2404.800
  311.641606  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2412.800
  312.627752  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2420.800
  313.008541  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2424.000
  313.760355  PLAY file=4.wav dur=0.650 vol=10 hmsl=2428.800
  314.414531  PLAY file=5.wav dur=0.680 vol=10 hmsl=2435.200
  315.097999  PLAY file=right.wav dur=0.700 vol=10 hmsl=2440.000
- 316.006034  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2448.000
+ 316.562572  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2451.200
  317.548717  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2459.200
  318.534863  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2467.200
  319.003527  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2472.000
  319.755341  PLAY file=4.wav dur=0.650 vol=10 hmsl=2476.800
  320.409517  PLAY file=5.wav dur=0.680 vol=10 hmsl=2483.200
  321.092984  PLAY file=right.wav dur=0.700 vol=10 hmsl=2488.000
- 322.001019  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2496.000
+ 322.469683  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2499.200
  323.455828  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2507.200
  324.441974  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2515.200
  325.008276  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2520.000
  325.760090  PLAY file=4.wav dur=0.650 vol=10 hmsl=2524.800
  326.414266  PLAY file=5.wav dur=0.680 vol=10 hmsl=2531.200
  327.097733  PLAY file=right.wav dur=0.700 vol=10 hmsl=2536.000
- 328.005769  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2544.000
+ 328.376794  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2545.600
  329.362940  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2553.600
  330.339322  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2561.600
  331.003261  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2568.000
  331.755075  PLAY file=4.wav dur=0.650 vol=10 hmsl=2572.800
  332.409251  PLAY file=5.wav dur=0.680 vol=10 hmsl=2579.200
  333.092719  PLAY file=right.wav dur=0.700 vol=10 hmsl=2584.000
- 334.000754  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2592.000
+ 334.283905  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2593.600
  335.270051  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2601.600
  336.246433  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2609.600
  337.008011  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2616.000
  337.759825  PLAY file=4.wav dur=0.650 vol=10 hmsl=2620.800
  338.414001  PLAY file=5.wav dur=0.680 vol=10 hmsl=2627.200
  339.097468  PLAY file=right.wav dur=0.700 vol=10 hmsl=2632.000
- 340.005503  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2640.000
+ 340.191016  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2640.000
  341.177162  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2648.000
  342.153544  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2656.000
  343.002996  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2664.000
  343.754810  PLAY file=4.wav dur=0.650 vol=10 hmsl=2668.800
  344.408986  PLAY file=5.wav dur=0.680 vol=10 hmsl=2675.200
  345.092454  PLAY file=right.wav dur=0.700 vol=10 hmsl=2680.000
- 346.000489  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2688.000
+ 346.098127  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2688.000
  347.084273  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2696.000
  348.060655  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2704.000
  349.007745  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2712.000
@@ -427,7 +416,6 @@
  350.413735  PLAY file=5.wav dur=0.680 vol=10 hmsl=2723.200
  351.097203  PLAY file=right.wav dur=0.700 vol=10 hmsl=2728.000
  352.005238  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2736.000
- 352.132168  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2736.000
  352.981620  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2742.400
  353.967766  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2750.400
  354.953912  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2758.400
@@ -436,7 +424,6 @@
  356.486832  PLAY file=5.wav dur=0.680 vol=10 hmsl=2771.200
  357.170299  PLAY file=right.wav dur=0.700 vol=10 hmsl=2776.000
  357.912349  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2782.400
- 358.039279  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2784.000
  358.888731  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2790.400
  359.874877  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2798.400
  360.861023  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2806.400
@@ -445,63 +432,63 @@
  362.413470  PLAY file=5.wav dur=0.680 vol=10 hmsl=2819.200
  363.096938  PLAY file=right.wav dur=0.700 vol=10 hmsl=2824.000
  363.819460  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2830.400
- 364.004973  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2832.000
+ 364.795842  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2836.800
  365.781988  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2844.800
  366.768134  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2852.800
  367.002466  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2856.000
  367.754280  PLAY file=4.wav dur=0.650 vol=10 hmsl=2860.800
  368.408456  PLAY file=5.wav dur=0.680 vol=10 hmsl=2867.200
  369.091923  PLAY file=right.wav dur=0.700 vol=10 hmsl=2872.000
- 370.009722  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2880.000
+ 370.702953  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2884.800
  371.689099  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2892.800
  372.675245  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2900.800
  373.007215  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2904.000
  373.759029  PLAY file=4.wav dur=0.650 vol=10 hmsl=2908.800
  374.413205  PLAY file=5.wav dur=0.680 vol=10 hmsl=2915.200
  375.096672  PLAY file=right.wav dur=0.700 vol=10 hmsl=2920.000
- 376.004708  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2928.000
+ 376.610065  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2932.800
  377.596210  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2939.200
  378.582356  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2947.200
  379.002200  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=2952.000
  379.754015  PLAY file=4.wav dur=0.650 vol=10 hmsl=2956.800
  380.408191  PLAY file=5.wav dur=0.680 vol=10 hmsl=2963.200
  381.091658  PLAY file=right.wav dur=0.700 vol=10 hmsl=2968.000
- 382.009457  PLAY file=directn.wav dur=0.800 vol=10 hmsl=2976.000
+ 382.517176  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2979.200
  383.503321  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2987.200
  384.489467  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=2995.200
  385.006950  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3000.000
  385.758764  PLAY file=4.wav dur=0.650 vol=10 hmsl=3004.800
  386.412940  PLAY file=5.wav dur=0.680 vol=10 hmsl=3011.200
  387.096407  PLAY file=right.wav dur=0.700 vol=10 hmsl=3016.000
- 388.004442  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3024.000
+ 388.424287  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3027.200
  389.410433  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3035.200
  390.396578  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3041.600
  391.001935  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3048.000
  391.753749  PLAY file=4.wav dur=0.650 vol=10 hmsl=3052.800
  392.407925  PLAY file=5.wav dur=0.680 vol=10 hmsl=3059.200
  393.091393  PLAY file=right.wav dur=0.700 vol=10 hmsl=3064.000
- 394.009192  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3072.000
+ 394.331398  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3073.600
  395.317544  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3081.600
  396.303689  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3089.600
  397.006685  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3096.000
  397.758499  PLAY file=4.wav dur=0.650 vol=10 hmsl=3100.800
  398.412675  PLAY file=5.wav dur=0.680 vol=10 hmsl=3107.200
  399.096142  PLAY file=right.wav dur=0.700 vol=10 hmsl=3112.000
- 400.004177  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3120.000
+ 400.238509  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3121.600
  401.224655  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3129.600
  402.210801  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3137.600
  403.001670  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3144.000
  403.753484  PLAY file=4.wav dur=0.650 vol=10 hmsl=3148.800
  404.407660  PLAY file=5.wav dur=0.680 vol=10 hmsl=3155.200
  405.091127  PLAY file=right.wav dur=0.700 vol=10 hmsl=3160.000
- 406.008927  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3168.000
+ 406.145620  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3168.000
  407.131766  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3176.000
  408.117912  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3184.000
  409.006419  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3192.000
  409.758233  PLAY file=4.wav dur=0.650 vol=10 hmsl=3196.800
  410.412409  PLAY file=5.wav dur=0.680 vol=10 hmsl=3203.200
  411.095877  PLAY file=right.wav dur=0.700 vol=10 hmsl=3208.000
- 412.003912  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3216.000
+ 412.052731  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3216.000
  413.038877  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3224.000
  414.025023  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3232.000
  415.001405  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3240.000
@@ -510,7 +497,6 @@
  416.534325  PLAY file=5.wav dur=0.680 vol=10 hmsl=3251.200
  417.217792  PLAY file=right.wav dur=0.700 vol=10 hmsl=3257.600
  417.959842  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3262.400
- 418.086772  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3264.000
  418.945988  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3270.400
  419.932134  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3278.400
  420.908516  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3286.400
@@ -519,7 +505,6 @@
  422.441436  PLAY file=5.wav dur=0.680 vol=10 hmsl=3299.200
  423.124903  PLAY file=right.wav dur=0.700 vol=10 hmsl=3304.000
  423.866953  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3310.400
- 424.003647  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3312.000
  424.853099  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3318.400
  425.829481  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3326.400
  426.815627  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3334.400
@@ -527,56 +512,56 @@
  427.752954  PLAY file=4.wav dur=0.650 vol=10 hmsl=3340.800
  428.407130  PLAY file=5.wav dur=0.680 vol=10 hmsl=3347.200
  429.090597  PLAY file=right.wav dur=0.700 vol=10 hmsl=3352.000
- 430.008396  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3360.000
+ 430.760210  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3364.800
  431.736592  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3372.800
  432.722738  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3380.800
  433.005889  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3384.000
  433.757703  PLAY file=4.wav dur=0.650 vol=10 hmsl=3388.800
  434.411879  PLAY file=5.wav dur=0.680 vol=10 hmsl=3395.200
  435.095346  PLAY file=right.wav dur=0.700 vol=10 hmsl=3400.000
- 436.003382  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3408.000
+ 436.667321  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3412.800
  437.643703  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3420.800
  438.629849  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3428.800
  439.000874  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3432.000
  439.752688  PLAY file=4.wav dur=0.650 vol=10 hmsl=3436.800
  440.406864  PLAY file=5.wav dur=0.680 vol=10 hmsl=3443.200
  441.090332  PLAY file=right.wav dur=0.700 vol=10 hmsl=3448.000
- 442.008131  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3456.000
+ 442.574432  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3459.200
  443.550814  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3467.200
  444.536960  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3475.200
  445.005624  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3480.000
  445.757438  PLAY file=4.wav dur=0.650 vol=10 hmsl=3484.800
  446.411614  PLAY file=5.wav dur=0.680 vol=10 hmsl=3491.200
  447.095081  PLAY file=right.wav dur=0.700 vol=10 hmsl=3496.000
- 448.003116  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3504.000
+ 448.471780  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3507.200
  449.457926  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3515.200
  450.444071  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3523.200
  451.000609  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3528.000
  451.752423  PLAY file=4.wav dur=0.650 vol=10 hmsl=3532.800
  452.406599  PLAY file=5.wav dur=0.680 vol=10 hmsl=3539.200
  453.090067  PLAY file=right.wav dur=0.700 vol=10 hmsl=3544.000
- 454.007866  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3552.000
+ 454.378891  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3553.600
  455.365037  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3561.600
  456.351182  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3569.600
  457.005358  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3576.000
  457.757173  PLAY file=4.wav dur=0.650 vol=10 hmsl=3580.800
  458.411349  PLAY file=5.wav dur=0.680 vol=10 hmsl=3587.200
  459.094816  PLAY file=right.wav dur=0.700 vol=10 hmsl=3592.000
- 460.002851  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3600.000
+ 460.286002  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3601.600
  461.272148  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3609.600
  462.258294  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3617.600
  463.000344  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3624.000
  463.752158  PLAY file=4.wav dur=0.650 vol=10 hmsl=3628.800
  464.406334  PLAY file=5.wav dur=0.680 vol=10 hmsl=3635.200
  465.089801  PLAY file=right.wav dur=0.700 vol=10 hmsl=3640.000
- 466.007600  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3648.000
+ 466.193113  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3648.000
  467.179259  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3656.000
  468.165405  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3664.000
  469.005093  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3672.000
  469.756907  PLAY file=4.wav dur=0.650 vol=10 hmsl=3676.800
  470.411083  PLAY file=5.wav dur=0.680 vol=10 hmsl=3683.200
  471.094551  PLAY file=right.wav dur=0.700 vol=10 hmsl=3688.000
- 472.002586  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3696.000
+ 472.100224  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3696.000
  473.086370  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3704.000
  474.072516  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3712.000
  475.000079  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3720.000
@@ -584,7 +569,6 @@
  476.406069  PLAY file=5.wav dur=0.680 vol=10 hmsl=3731.200
  477.089536  PLAY file=right.wav dur=0.700 vol=10 hmsl=3736.000
  478.007335  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3744.000
- 478.134265  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3744.000
  478.993481  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3750.400
  479.979627  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3758.400
  480.965773  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3766.400
@@ -593,7 +577,6 @@
  482.498692  PLAY file=5.wav dur=0.680 vol=10 hmsl=3779.200
  483.182160  PLAY file=right.wav dur=0.700 vol=10 hmsl=3784.000
  483.914446  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3790.400
- 484.041376  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3792.000
  484.900592  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3798.400
  485.886738  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3806.400
  486.872884  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3814.400
@@ -602,7 +585,6 @@
  488.415567  PLAY file=5.wav dur=0.680 vol=10 hmsl=3827.200
  489.099035  PLAY file=right.wav dur=0.700 vol=10 hmsl=3832.000
  489.821557  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3838.400
- 490.007070  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3840.000
  490.807703  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3846.400
  491.793849  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3852.800
  492.779995  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3860.800
@@ -610,21 +592,21 @@
  493.756377  PLAY file=4.wav dur=0.650 vol=10 hmsl=3868.800
  494.410553  PLAY file=5.wav dur=0.680 vol=10 hmsl=3875.200
  495.094020  PLAY file=right.wav dur=0.700 vol=10 hmsl=3880.000
- 496.002056  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3888.000
+ 496.714814  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3892.800
  497.700960  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3900.800
  498.687106  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3908.800
  499.009312  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3912.000
  499.761126  PLAY file=4.wav dur=0.650 vol=10 hmsl=3916.800
  500.415302  PLAY file=5.wav dur=0.680 vol=10 hmsl=3923.200
  501.098770  PLAY file=right.wav dur=0.700 vol=10 hmsl=3928.000
- 502.006805  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3936.000
+ 502.621925  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3940.800
  503.608071  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3948.800
  504.584453  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3955.200
  505.004298  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=3960.000
  505.756112  PLAY file=4.wav dur=0.650 vol=10 hmsl=3964.800
  506.410288  PLAY file=5.wav dur=0.680 vol=10 hmsl=3971.200
  507.093755  PLAY file=right.wav dur=0.700 vol=10 hmsl=3976.000
- 508.001790  PLAY file=directn.wav dur=0.800 vol=10 hmsl=3984.000
+ 508.529037  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3987.200
  509.515182  BEEP f0=220 f1=220 ms=125 vol=10 hmsl=3995.200
  510.706368  BEEP f0=1534 f1=1534 ms=125 vol=10 hmsl=3998.238
  510.901645  BEEP f0=1208 f1=1208 ms=125 vol=10 hmsl=3996.871

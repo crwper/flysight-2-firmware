@@ -2,8 +2,6 @@
 # config=config.txt track=track.csv tail=2.000
 # rtc_tick_ns=488191
    0.009763  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=0.000
-  10.007915  PLAY file=directn.wav dur=0.800 vol=10 hmsl=0.000
-  13.005408  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=24.000
   14.997227  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=38.400
   15.192503  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=40.000
   15.387780  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=41.600
@@ -1252,11 +1250,9 @@
  739.599601  PLAY file=5.wav dur=0.680 vol=10 hmsl=45.000
  740.283068  PLAY file=7.wav dur=0.690 vol=10 hmsl=41.000
  740.976299  PLAY file=left.wav dur=0.778 vol=10 hmsl=38.000
- 741.757405  PLAY file=bearing.wav dur=0.750 vol=10 hmsl=34.000
  744.003084  PLAY file=distance.wav dur=0.930 vol=10 hmsl=22.000
  744.940410  PLAY file=2.wav dur=0.480 vol=10 hmsl=18.000
  745.428601  PLAY file=dot.wav dur=0.610 vol=10 hmsl=15.000
  746.043722  PLAY file=0.wav dur=0.600 vol=10 hmsl=12.000
  746.649079  PLAY file=km.wav dur=0.950 vol=10 hmsl=9.000
- 747.605933  PLAY file=directn.wav dur=0.800 vol=10 hmsl=4.000
  760.200000  END

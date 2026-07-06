@@ -661,3 +661,74 @@ unclassifiable. Confirmed double lat/lon, single FromGNSS builder, grep survivor
 all sanctioned (QUIRKS #5 rate path, #16 heading, #20 GetSAS). Michael APPROVED
 and ratified the integer rate/SAS enclave as PERMANENT policy -> BRIEF §5 Numbers
 paragraph updated accordingly. Committed by orchestrator after sign-off.
+
+---
+
+## B2 — 2026-07-06 — SUCCESS
+
+Implemented the ONE skip rule in FS_Speech_BuildValue (audio_speech.c only):
+a speech value that cannot be produced -- a division guard (glide velD==0,
+inverse glide gSpeed==0, mode-12 altitude Sp_Dec 0 so step_size==0 [#19]), a
+nav gate (End_Nav / Max_Dist on modes 5/7), or an unknown Sp_Mode -- clears a
+new `valid` flag and returns an EMPTY queue (sp->buf[0]=TOK_END, pos=0): no
+label, no value, no left/right suffix. Removed `dir_valid` and the two
+`buf[--ptr]=TOK_END` empty-value writes (the QUIRKS #12 preservation from A3);
+added an explicit `default:` for unknown modes and a mode-12 `if (decimals!=0)`
+guard (no more host div-by-zero, #19). The direction suffix now runs only on
+the valid path, so dir_val is always computed -- QUIRKS #13's uninitialized
+read is gone STRUCTURALLY, not by luck. audio_control.c untouched (the rule
+lives entirely in the builder; SpeechSource still rotates cur_speech / resets
+sp_counter for a skipped slot exactly as before). Suite 50/50; mutation 33
+killed / 0 NO-MATCH (no anchor moved -- M26/27/28/30 in audio_speech.c are all
+outside the edited region; no mutant tested the removed #12/#13 pathology).
+QUIRKS 12+13 -> DONE, #13 golden-instability caveat deleted, #19 annotated
+(crash fixed by B2 skip; config.c clamp still B7).
+
+DEVIATION from the card DoD ("exactly four goldens change"): only THREE changed
+-- speech-zero-div, speech-nav, speech-nav-gated. speech-invalid-cfg is
+BYTE-IDENTICAL and could not honestly be made to change. Reason: the current
+token code ALREADY emits silence for unknown Sp_Mode 8 -- labelToken(8) returns
+TOK_END and the Step-2 truncation leaves an empty buffer, so nothing ever
+played for that rotation slot (verified: the golden has only horz/distance
+labels, no mode-8 output). Routing unknown mode through the explicit skip path
+(the card's RECOMMENDED decision, which I took) is therefore behaviour-
+preserving here, so `--bless` produced no diff. I did NOT fabricate a change
+(BRIEF §6: don't improvise behaviour). Flag for the orchestrator: the card's
+"currently near-silent slots vanish" premise was optimistic -- they were
+already fully silent.
+
+The three real diffs, each verified line-by-line before blessing:
+ * speech-zero-div: pure deletion of the 5 periodic label-only `glide.wav`
+   utterances (glide velD==0 every cycle); only the 3.007 first-fix beep + END
+   remain. (iglide gSpeed==0 was already empty via #12 Sp_Dec 1.)
+ * speech-nav: pure deletion of 4 gated label-only utterances (2 directn, 2
+   bearing) at hmsl 0/24/34/4 mm -- all below the End_Nav gate (End_Nav 300 ->
+   *1000 wraps uint16 to 37856 mm, so <37.856 m AGL is gated; see A3 note). The
+   early velD is under V_Thresh 3 m/s so no tone fills in -> clean deletion.
+   Every ungated utterance byte-identical.
+ * speech-nav-gated: 84 Max_Dist-gated mode-5 `directn.wav` (the whole far
+   climb, dist>=3000) deleted; the 39 near-waypoint directn (with values) and
+   ALL mode-7 bearing utterances are byte-identical. NEW: 66 f0=220 glide-tone
+   beeps appear in windows the removed speech used to occupy -- a DIRECT,
+   correct consequence: the climb velD exceeds V_Thresh so the glide tone is
+   continuously active, but each bogus directn.wav had been holding it off via
+   tone_hold/ZONE_SPEECH_ACTIVE; with the utterance skipped the tone sounds as
+   it should. Verified: every added line is an f0=220 beep, every removed line
+   is directn.wav, nothing else moved.
+
+COVERAGE (QUIRKS #20a, the audio_speech.c:131 MINUS branch for a negative speech
+value while climbing): still UNCOVERED. None of the four B2 scenarios voices a
+negative value -- the direction modes fold sign into left/right (ABS()*100),
+distance is positive, and speech-zero-div now emits nothing. B2's allowed files
+do NOT include a scenario dir, so per the card I did not add/extend one. DEFER
+to C1's coverage re-check (needs a climbing vertical-speed/glide/dive speech
+scenario, velD<0).
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe (clean, no warnings)
+  run_tests.py              -> 50 passed, 0 failed, 0 new
+  git diff HEAD --stat golden -> exactly speech-nav-gated / speech-nav /
+                                 speech-zero-div (3 files)
+  mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)
+Note (unchanged from B1): the differential fuzzer / audio_sim_ref is frozen OLD
+integer code and diverges from the new goldens by design -- NOT used as a gate.

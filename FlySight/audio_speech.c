@@ -241,12 +241,16 @@ void FS_Speech_BuildValue(
 	uint8_t *buf = sp->buf;
 	int ptr, end;
 
-	// Direction suffix (modes 5/7): only voiced when the value is actually
-	// computed. The legacy code read an uninitialized tVal here when the
-	// nav gates skipped the calculation (QUIRKS #13); that garbage was
-	// written below the read cursor and never played in any golden, so
-	// omitting it is byte-identical for the goldens.
-	bool dir_valid = false;
+	// B2 (QUIRKS #12/#13/#19): if a value cannot be produced, the ENTIRE
+	// utterance is skipped -- no label, no value, no left/right suffix. `valid`
+	// stays true only when the switch below actually encodes a value; it is
+	// cleared by a division guard (glide velD==0, inverse glide gSpeed==0,
+	// mode-12 altitude with Sp_Dec 0 so step_size==0), a nav gate
+	// (End_Nav / Max_Dist), or an unknown Sp_Mode. The direction suffix
+	// (modes 5/7) then reads dir_val only on the valid path, where it was
+	// actually computed -- structurally eliminating the old uninitialized-tVal
+	// read (QUIRKS #13).
+	bool valid = true;
 	int32_t dir_val = 0;
 
 	switch (units)
@@ -288,7 +292,7 @@ void FS_Speech_BuildValue(
 		}
 		else
 		{
-			buf[--ptr] = TOK_END;
+			valid = false; // division guard: velD == 0 (QUIRKS #12)
 		}
 		break;
 	case FS_CONFIG_MODE_INVERSE_GLIDE_RATIO:
@@ -298,7 +302,7 @@ void FS_Speech_BuildValue(
 		}
 		else
 		{
-			buf[--ptr] = TOK_END;
+			valid = false; // division guard: gSpeed == 0 (QUIRKS #12)
 		}
 		break;
 	case FS_CONFIG_MODE_TOTAL_SPEED:
@@ -306,17 +310,20 @@ void FS_Speech_BuildValue(
 		break;
 	case FS_CONFIG_MODE_DIRECTION_TO_DESTINATION:
 		// Nav quantity (nav.c unchanged in B1); dir_val is an integer degree, so
-		// ABS(dir_val)*100 is exact -- byte-identical to the old code.
-		if ((calcDistance(current->lat, current->lon, config->lat, config->lon) < config->max_dist) ||
-		    (config->max_dist == 0))
+		// ABS(dir_val)*100 is exact -- byte-identical to the old code. Both nav
+		// gates (Max_Dist range, End_Nav altitude) must pass or the utterance is
+		// skipped entirely (QUIRKS #13).
+		if (((calcDistance(current->lat, current->lon, config->lat, config->lon) < config->max_dist) ||
+		     (config->max_dist == 0)) &&
+		    ((current->hMSL > (config->end_nav + config->dz_elev)) || (config->end_nav == 0)))
 		{
-			if ((current->hMSL > (config->end_nav + config->dz_elev)) || (config->end_nav == 0))
-			{
-				decimals = 0;
-				dir_val = calcDirection(current->lat, current->lon, config->lat, config->lon, current->heading);
-				dir_valid = true;
-				ptr = writeValueTokens(buf, ptr, ABS(dir_val) * 100);
-			}
+			decimals = 0;
+			dir_val = calcDirection(current->lat, current->lon, config->lat, config->lon, current->heading);
+			ptr = writeValueTokens(buf, ptr, ABS(dir_val) * 100);
+		}
+		else
+		{
+			valid = false; // nav-gated: below End_Nav or beyond Max_Dist
 		}
 		break;
 	case FS_CONFIG_MODE_DISTANCE_TO_DESTINATION:
@@ -347,8 +354,11 @@ void FS_Speech_BuildValue(
 		{
 			decimals = 0;
 			dir_val = calcRelBearing(config->bearing, current->heading / 100000);
-			dir_valid = true;
 			ptr = writeValueTokens(buf, ptr, ABS(dir_val) * 100);
+		}
+		else
+		{
+			valid = false; // nav-gated: below End_Nav (QUIRKS #13)
 		}
 		break;
 	case FS_CONFIG_MODE_DIVE_ANGLE:
@@ -356,19 +366,41 @@ void FS_Speech_BuildValue(
 		break;
 	case FS_CONFIG_MODE_ALTITUDE:
 		// Altitude announcement uses the integer step arithmetic (like the
-		// alt-step / ground-elev builders), byte-identical.
-		if (units == FS_CONFIG_UNITS_METERS)
+		// alt-step / ground-elev builders), byte-identical. Sp_Dec 0 makes
+		// step_size == 0 (a divide-by-zero, QUIRKS #19): skip the utterance
+		// rather than divide.
+		if (decimals != 0)
 		{
-			step_size = 10000 * decimals;
+			if (units == FS_CONFIG_UNITS_METERS)
+			{
+				step_size = 10000 * decimals;
+			}
+			else
+			{
+				step_size = 3048 * decimals;
+			}
+			step = ((current->hMSL - config->dz_elev) * 10 + step_size / 2) / step_size;
+			end = numberToTokens(buf, 2, step * decimals);
+			ptr = 2;
 		}
 		else
 		{
-			step_size = 3048 * decimals;
+			valid = false; // step_size == 0 (QUIRKS #19)
 		}
-		step = ((current->hMSL - config->dz_elev) * 10 + step_size / 2) / step_size;
-		end = numberToTokens(buf, 2, step * decimals);
-		ptr = 2;
 		break;
+	default:
+		valid = false; // unknown Sp_Mode (config typo): nothing to speak
+		break;
+	}
+
+	// B2: uncomputable / gated / unknown -> emit nothing at all (no label, no
+	// value, no suffix). Leaves an empty queue so the arbiter plays silence for
+	// this rotation slot; SpeechSource still advances cur_speech / sp_counter.
+	if (!valid)
+	{
+		sp->buf[0] = TOK_END;
+		sp->pos = 0;
+		return;
 	}
 
 	// Step 1.5: Include label (one token, was '>' + mode+1).
@@ -378,9 +410,9 @@ void FS_Speech_BuildValue(
 	}
 
 	// Step 2: Truncate to the desired number of decimal places. Same index
-	// arithmetic as the legacy end_ptr adjustment; for an empty value the
-	// terminator can land on the label token (QUIRKS #12): Sp_Dec 1 silences
-	// the whole utterance, Sp_Dec 0/2 leave the label alone.
+	// arithmetic as the legacy end_ptr adjustment. Only reached on the valid
+	// path now, so the value region always holds a real number -- the old
+	// empty-value truncation pathology (QUIRKS #12) can no longer occur.
 	if (mode != FS_CONFIG_MODE_ALTITUDE)
 	{
 		if (decimals == 0) end -= 4;
@@ -399,11 +431,10 @@ void FS_Speech_BuildValue(
 		break;
 	case FS_CONFIG_MODE_DIRECTION_TO_DESTINATION:
 	case FS_CONFIG_MODE_DIRECTION_TO_BEARING:
-		if (dir_valid)
-		{
-			if (dir_val < 0)      buf[end++] = TOK_SUFFIX_LEFT;
-			else if (dir_val > 0) buf[end++] = TOK_SUFFIX_RIGHT;
-		}
+		// Reached only on the valid path, so dir_val was computed above (no
+		// uninitialized read -- QUIRKS #13 is gone structurally).
+		if (dir_val < 0)      buf[end++] = TOK_SUFFIX_LEFT;
+		else if (dir_val > 0) buf[end++] = TOK_SUFFIX_RIGHT;
 		break;
 	case FS_CONFIG_MODE_DISTANCE_TO_DESTINATION:
 		switch (units)
