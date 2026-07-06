@@ -106,6 +106,21 @@ static const uint8_t suppression_table[ZONE_COUNT] =
 //  Sources + arbiter state
 // ===========================================================================
 
+// Alarm source: owns the FILTERED alarm list, built once from config at
+// FS_AudioControl_Init. QUIRKS #18 (B5): an Alarm_Type 0 entry is ignored
+// COMPLETELY -- it plays nothing, cancels no queued speech, and creates no
+// alarm suppression window -- so type-0 entries are dropped here and never
+// enter the crossing scan or the suppression-window scan. Because filtering
+// compacts the list at init, the crossing-scan index, Arbiter_FireAlarm, and
+// the producer's "did any alarm fire this sample" collision count (fired_index
+// vs num_alarms) all index this SAME filtered set: filtering can neither shift
+// an index nor miscount.
+typedef struct
+{
+	FS_Config_Alarm_t alarms[FS_CONFIG_MAX_ALARMS];
+	uint8_t           num_alarms;
+} AlarmSource_t;
+
 // Altitude-mode source: silence + alt-step suppression zones, the Alt_Step
 // announcement decision, and the say-altitude latch (old FLAG_SAY_ALTITUDE):
 // the ground-elevation announcement is pending until vAcc is good and it plays.
@@ -167,6 +182,7 @@ typedef struct
 
 	int32_t prevHMSL;
 
+	AlarmSource_t   alarm;
 	AltModeSource_t altmode;
 	SpeechSource_t  speech_src;
 	StartupSource_t startup;
@@ -492,11 +508,13 @@ static void updateTones(
 // ===========================================================================
 
 // Alarm source: alarm-window suppression (every sample) and the alarm-crossing
-// scan ([min,max) interval, QUIRKS #8). ORs its suppression contribution into
-// suppress_mask and, when the previous sample had a fix, reports the index of
-// the alarm to fire (num_alarms = none); the actual sound / speech-cancel is
-// applied by the arbiter AFTER the shared rising-edge stop, preserving
-// Stop-before-Beep ordering.
+// scan ([min,max) interval, QUIRKS #8). Both scans run over state.alarm, the
+// FILTERED list (QUIRKS #18: type-0 alarms already dropped at init), so a
+// type-0 elevation neither creates a suppression window nor fires. ORs its
+// suppression contribution into suppress_mask and, when the previous sample had
+// a fix, reports the FILTERED index of the alarm to fire (num_alarms = none);
+// the actual sound / speech-cancel is applied by the arbiter AFTER the shared
+// rising-edge stop, preserving Stop-before-Beep ordering.
 static void AlarmSource_Update(
 	const FS_Config_Data_t *config,
 	FS_GNSS_Data_t *current,
@@ -507,9 +525,9 @@ static void AlarmSource_Update(
 {
 	uint8_t i;
 
-	for (i = 0; i < config->num_alarms; ++i)
+	for (i = 0; i < state.alarm.num_alarms; ++i)
 	{
-		const int32_t alarm_elev = config->alarms[i].elev + config->dz_elev;
+		const int32_t alarm_elev = state.alarm.alarms[i].elev + config->dz_elev;
 
 		if ((current->hMSL <= alarm_elev + config->alarm_window_above) &&
 		    (current->hMSL >= alarm_elev - config->alarm_window_below))
@@ -519,16 +537,16 @@ static void AlarmSource_Update(
 		}
 	}
 
-	*fired_index = config->num_alarms;
+	*fired_index = state.alarm.num_alarms;
 
 	if (prev_had_fix)
 	{
 		int32_t min = MIN(prevHMSL, current->hMSL);
 		int32_t max = MAX(prevHMSL, current->hMSL);
 
-		for (i = 0; i < config->num_alarms; ++i)
+		for (i = 0; i < state.alarm.num_alarms; ++i)
 		{
-			const int32_t alarm_elev = config->alarms[i].elev + config->dz_elev;
+			const int32_t alarm_elev = state.alarm.alarms[i].elev + config->dz_elev;
 
 			if (alarm_elev >= min && alarm_elev < max)
 			{
@@ -642,7 +660,7 @@ static void Arbiter_FireAlarm(
 {
 	char filename[13];
 
-	switch (config->alarms[index].type)
+	switch (state.alarm.alarms[index].type)
 	{
 	case 1:	// beep
 		FS_Audio_Beep(TONE_MAX_PITCH, TONE_MAX_PITCH, 125, config->volume * 5);
@@ -655,7 +673,7 @@ static void Arbiter_FireAlarm(
 		break ;
 	case 4:	// play file
 		filename[0] = '\0';
-		strncat(filename, config->alarms[index].filename, sizeof(filename) - 1);
+		strncat(filename, state.alarm.alarms[index].filename, sizeof(filename) - 1);
 		strncat(filename, ".wav", sizeof(filename) - 1);
 		FS_Audio_Play(filename, config->sp_volume * 5);
 		break;
@@ -794,7 +812,10 @@ static void producerTask(void)
 
 			if (prev_had_fix)
 			{
-				if (fired_index != config.num_alarms)
+				// "Did any alarm fire this sample" (old `i == num_alarms`). The
+				// sentinel and fired_index both index the FILTERED list, so a
+				// dropped type-0 alarm cannot shift indices or miscount here.
+				if (fired_index != state.alarm.num_alarms)
 				{
 					Arbiter_FireAlarm(&config, fired_index);
 					FS_Speech_Clear(&state.speech);
@@ -879,6 +900,20 @@ void FS_AudioControl_Init(void)
 	// Initialize consumer timer
 	HW_TS_Create(CFG_TIM_PROC_ID_ISR, &state.timer_id, hw_ts_Repeated, consumerTimer);
 	HW_TS_Start(state.timer_id, CONSUMER_TIMER_TICKS);
+
+	// AlarmSource: build the filtered alarm list. QUIRKS #18 -- Alarm_Type 0
+	// entries are ignored COMPLETELY (no sound, no speech-cancel, no suppression
+	// window), so they are dropped here and never enter the crossing scan, the
+	// suppression-window scan, or Arbiter_FireAlarm. Compacting at init keeps the
+	// scan index, the fire, and the collision count consistent on one filtered
+	// set (num_alarms already zeroed by the memset above).
+	for (i = 0; i < config->num_alarms; ++i)
+	{
+		if (config->alarms[i].type != 0)
+		{
+			state.alarm.alarms[state.alarm.num_alarms++] = config->alarms[i];
+		}
+	}
 
 	// AltModeSource say-altitude latch: pending ground-elevation announcement.
 	if (config->alt_step > 0)

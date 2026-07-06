@@ -877,3 +877,84 @@ Verification observed:
   mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)
 Note (unchanged from B1/B2): the differential fuzzer / audio_sim_ref is frozen OLD
 integer code and diverges from the new goldens by design -- NOT used as a gate.
+
+---
+
+## B5 — 2026-07-06 — SUCCESS
+
+Implemented QUIRKS #18. Michael reviewed the mid-card mutation blocker (below) and
+AUTHORIZED the resolution, amending the allowed files to add mutation_test.py, the
+new scenarios/alarm-cancels-speech/, and its golden. Code + alarm-type-none golden
+accepted as-is; resolution finished in the same working tree.
+
+CODE (QUIRKS #18, audio_control.c only): re-introduced AlarmSource_t (the empty
+A4 scaffold A7 removed), now holding a FILTERED alarm list
+(FS_Config_Alarm_t alarms[FS_CONFIG_MAX_ALARMS] + num_alarms). FS_AudioControl_Init
+builds it once from config, copying only entries with type != 0 (QUIRKS #18 comment
+in-source). AlarmSource_Update's suppression-window scan AND crossing scan, plus
+Arbiter_FireAlarm's index, plus the producer's "did any alarm fire" collision check
+now all read state.alarm.alarms / state.alarm.num_alarms -- the single filtered set,
+so filtering can neither shift an index nor miscount (the CRITICAL step-2 check).
+A type-0 alarm now plays nothing, cancels no speech, and creates no suppression
+window. git diff --stat golden = EXACTLY alarm-type-none (of the pre-existing 51).
+
+GOLDEN (alarm-type-none, read fully before blessing): the alarm elev is 2000 m
+(DZ_Elev 0), crossed descending between t=550.19 (hmsl 2013.738) and t=550.76
+(hmsl 1980.738) -- old code fired the type-0 alarm at t=550.757558 and ran
+FS_Speech_Clear, clipping the running vertical-speed speech. Removing that, the
+utterance now completes: everything above the crossing is byte-identical; the
+speech stream re-phases from the first visible divergence at t=553.589 (digit
+alignment shifts by one), and the new trace plays ONE ADDITIONAL token
+(2.wav @ 572.716) because the previously-clipped utterance now finishes. END
+760.200000 unchanged. TONE-HOLD side effect (B2/#13): NONE VISIBLE here -- the
+descent has continuous back-to-back speech that already holds the tone off in
+BOTH versions (only 1 BEEP in the whole trace, the t=0.009763 first-fix beep,
+byte-identical), and Win_Above/Below are 0 so no suppression-window change. So
+the diff is speech-only re-phasing, exactly the card's expected impact.
+Full-suite scan: alarm-type-none is the ONLY scenario with an Alarm_Type 0
+(grep Alarm_Type:\s*0 over scenarios/ -> 1 file); all other 50 goldens
+byte-identical.
+
+NEW SCENARIO (alarm-cancels-speech): the CONTRAST to speech-interrupt (Win 50,
+which STOPs on window entry). Here a REAL type-1 (beep) alarm sits at 2500 m with
+Win_Above/Below 0 -- NO suppression window, so the speech queue is NOT pre-cleared
+before the crossing; the crossing ITSELF is the cancel. Glide-tone config (Model 7,
+Mode 2 glide / Mode_2 9), Sp_Rate 1, ONE speech entry Sp_Mode 1 mph Sp_Dec 0 ->
+tightly spaced continuous vertical-speed speech. Track: scripts/gen_jump.py normal
+jump, exit 4000 m AGL, terminal 50 m/s, freefall-hspeed 15 (so the glide tone
+sounds), deploy 1500 m. Trace read before blessing: first-fix beep t=0.009763;
+a CLIMB crossing of 2500 m fires an alarm beep at t=510.2 into silence (QUIRKS #1,
+climb-alarm; speech/tones threshold-gated during the 5 m/s climb); freefall speech
+runs t=811+; the FREEFALL 2500 m crossing at t=843.600 fires the alarm beep which
+"(cuts 9.wav)" mid-token and the correct code drops the queued remainder (a fresh
+utterance restarts at t=843.731); the glide tone resumes (f0=419 at t=865) once the
+speech thins near deploy; END 1157.4. This is exactly M33's observable: dropping
+the crossing's FS_Speech_Clear leaves the queued remainder playing, diverging here.
+
+MUTATION (mutation_test.py, now allowed): re-anchored the two mutants my filtered-
+list design moved -- M03 "config->alarms[i].elev" -> "state.alarm.alarms[i].elev"
+(x2), M32 _M32_OLD/_M32_NEW "config.num_alarms" -> "state.alarm.num_alarms" (the
+QUIRKS-#18 comment I inserted sits ABOVE the `if`, outside both anchor blocks, so
+no further adjustment). M33's two anchor lines were already unchanged; it is now
+KILLED by the new alarm-cancels-speech scenario (its A7 kill via alarm-type-none is
+gone by design -- that was the type-0 speech-cancel #18 removes). Full run: 33
+killed, 0 needing attention, 0 NO-MATCH; `--only M33` -> KILLED, 1 scenario
+(alarm-cancels-speech). Suite 52/52 (new scenario included).
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe (clean, no warnings)
+  run_tests.py              -> 52 passed, 0 failed, 0 new
+  git diff --stat golden    -> alarm-type-none (modified) + alarm-cancels-speech (new)
+  mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH), M33 killed
+Note (unchanged from B1): the differential fuzzer / audio_sim_ref is frozen OLD
+integer code and diverges from the new goldens by design -- NOT used as a gate.
+
+--- Original mid-card BLOCKER report (retained for history; RESOLVED above) ---
+Per the card's "STOP and report rather than editing mutation_test.py", the initial
+run was 30 killed / 3 needing attention, mutation_test.py not yet allowed:
+  * M03 NO-MATCH: anchor moved by the filtered-list rename (re-anchored above).
+  * M32 NO-MATCH: anchor moved + inserted comment (re-anchored above).
+  * M33 SURVIVED (SEMANTIC): its ONLY kill scenario was alarm-type-none's type-0
+    speech-cancel -- the exact behaviour this card removes -- so 0/51 goldens killed
+    it; needed a real-alarm-mid-speech scenario (added above). I stopped and
+    reported; Michael authorized the amended allowed files and this resolution.

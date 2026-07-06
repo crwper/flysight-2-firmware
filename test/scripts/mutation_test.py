@@ -30,7 +30,7 @@ AS = TEST.parent / "FlySight" / "audio_speech.c"
 # CH_ALT_STEP "priority rows" in producerTask: on a same-sample alarm+alt-step
 # collision the step is announced instead of the alarm firing.
 _M32_OLD = (
-    "\t\t\t\tif (fired_index != config.num_alarms)\n"
+    "\t\t\t\tif (fired_index != state.alarm.num_alarms)\n"
     "\t\t\t\t{\n"
     "\t\t\t\t\tArbiter_FireAlarm(&config, fired_index);\n"
     "\t\t\t\t\tFS_Speech_Clear(&state.speech);\n"
@@ -45,7 +45,7 @@ _M32_NEW = (
     "\t\t\t\t{\n"
     "\t\t\t\t\tFS_Speech_BuildAltStep(&state.speech, &config, step);\n"
     "\t\t\t\t}\n"
-    "\t\t\t\telse if (fired_index != config.num_alarms)\n"
+    "\t\t\t\telse if (fired_index != state.alarm.num_alarms)\n"
     "\t\t\t\t{\n"
     "\t\t\t\t\tArbiter_FireAlarm(&config, fired_index);\n"
     "\t\t\t\t\tFS_Speech_Clear(&state.speech);\n"
@@ -75,8 +75,8 @@ MUTANTS = [
     ("M02", 1, "alarm_elev >= min && alarm_elev < max",
                "alarm_elev >= min && alarm_elev <= max",
      "alarm crossing: include upper bound (fires one sample early on ascent)"),
-    ("M03", 2, "config->alarms[i].elev + config->dz_elev",
-               "config->alarms[i].elev",
+    ("M03", 2, "state.alarm.alarms[i].elev + config->dz_elev",
+               "state.alarm.alarms[i].elev",
      "alarm elevation: drop dz_elev offset"),
     ("M04", 1, "alarm_elev + config->alarm_window_above",
                "alarm_elev + config->alarm_window_below",

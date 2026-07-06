@@ -1,0 +1,43 @@
+; A type-1 (beep) alarm at 2500 m with NO suppression window (Win_Above/Below 0)
+; crossed in freefall while tightly spaced speech (Sp_Rate 1, mph vertical speed)
+; is mid-utterance. Because there is no alarm window, the speech queue is NOT
+; pre-cleared before the crossing (the distinction from speech-interrupt, which
+; STOPs on window entry): the crossing ITSELF is the speech cancel -- the alarm
+; beep preempts the token in progress and drops the queued remainder.
+; Characterizes: the alarm-crossing speech-cancel (FS_Speech_Clear after
+; Arbiter_FireAlarm) as an observable mid-stream cut; glide tone resumes in the
+; freed queue once the utterance remainder is dropped.
+
+Model:     7
+Rate:      200
+
+Mode:      2     ; Glide ratio
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9     ; Change in value 1
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   1     ; speak every second
+Sp_Volume: 6
+
+Sp_Mode:   1     ; vertical speed
+Sp_Units:  1     ; mph
+Sp_Dec:    0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 0     ; no suppression window -- queue not pre-cleared before crossing
+Win_Below: 0
+DZ_Elev:   0
+
+Alarm_Elev: 2500
+Alarm_Type: 1    ; beep

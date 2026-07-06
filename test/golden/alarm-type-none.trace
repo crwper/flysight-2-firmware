@@ -72,36 +72,37 @@
  551.890161  PLAY file=1.wav dur=0.560 vol=10 hmsl=1914.738
  552.456463  PLAY file=1.wav dur=0.560 vol=10 hmsl=1881.738
  553.022764  PLAY file=1.wav dur=0.560 vol=10 hmsl=1848.738
- 553.589066  PLAY file=2.wav dur=0.480 vol=10 hmsl=1826.738
- 554.077257  PLAY file=1.wav dur=0.560 vol=10 hmsl=1793.738
+ 553.589066  PLAY file=1.wav dur=0.560 vol=10 hmsl=1826.738
+ 554.155367  PLAY file=2.wav dur=0.480 vol=10 hmsl=1793.738
  554.643558  PLAY file=1.wav dur=0.560 vol=10 hmsl=1760.738
- 555.209860  PLAY file=2.wav dur=0.480 vol=10 hmsl=1727.738
- 555.698051  PLAY file=1.wav dur=0.560 vol=10 hmsl=1705.738
+ 555.209860  PLAY file=1.wav dur=0.560 vol=10 hmsl=1727.738
+ 555.776162  PLAY file=2.wav dur=0.480 vol=10 hmsl=1705.738
  556.264353  PLAY file=1.wav dur=0.560 vol=10 hmsl=1672.738
- 556.830654  PLAY file=3.wav dur=0.560 vol=10 hmsl=1639.738
- 557.396956  PLAY file=1.wav dur=0.560 vol=10 hmsl=1617.738
+ 556.830654  PLAY file=1.wav dur=0.560 vol=10 hmsl=1639.738
+ 557.396956  PLAY file=3.wav dur=0.560 vol=10 hmsl=1617.738
  557.963257  PLAY file=1.wav dur=0.560 vol=10 hmsl=1584.738
- 558.529559  PLAY file=3.wav dur=0.560 vol=10 hmsl=1551.738
- 559.095860  PLAY file=1.wav dur=0.560 vol=10 hmsl=1518.738
- 559.662162  PLAY file=1.wav dur=0.560 vol=10 hmsl=1485.738
- 560.228463  PLAY file=4.wav dur=0.650 vol=10 hmsl=1452.738
- 560.882639  PLAY file=1.wav dur=0.560 vol=10 hmsl=1419.738
- 561.448941  PLAY file=1.wav dur=0.560 vol=10 hmsl=1386.738
- 562.015243  PLAY file=4.wav dur=0.650 vol=10 hmsl=1353.738
- 562.669418  PLAY file=1.wav dur=0.560 vol=10 hmsl=1320.738
- 563.235720  PLAY file=1.wav dur=0.560 vol=10 hmsl=1287.738
- 563.802022  PLAY file=5.wav dur=0.680 vol=10 hmsl=1254.738
- 564.485489  PLAY file=1.wav dur=0.560 vol=10 hmsl=1221.738
- 565.051791  PLAY file=1.wav dur=0.560 vol=10 hmsl=1188.738
- 565.618092  PLAY file=6.wav dur=0.740 vol=10 hmsl=1155.738
- 566.360142  PLAY file=1.wav dur=0.560 vol=10 hmsl=1122.738
- 566.926444  PLAY file=1.wav dur=0.560 vol=10 hmsl=1089.738
- 567.492746  PLAY file=6.wav dur=0.740 vol=10 hmsl=1056.738
- 568.234796  PLAY file=1.wav dur=0.560 vol=10 hmsl=1012.738
- 568.801097  PLAY file=1.wav dur=0.560 vol=10 hmsl=979.000
- 569.367399  PLAY file=7.wav dur=0.690 vol=10 hmsl=960.000
- 570.060630  PLAY file=9.wav dur=0.660 vol=10 hmsl=928.000
- 570.724570  PLAY file=0.wav dur=0.600 vol=10 hmsl=909.250
- 571.329927  PLAY file=5.wav dur=0.680 vol=10 hmsl=895.000
- 572.013394  PLAY file=3.wav dur=0.560 vol=10 hmsl=883.000
+ 558.529559  PLAY file=1.wav dur=0.560 vol=10 hmsl=1551.738
+ 559.095860  PLAY file=4.wav dur=0.650 vol=10 hmsl=1518.738
+ 559.750036  PLAY file=1.wav dur=0.560 vol=10 hmsl=1485.738
+ 560.316338  PLAY file=1.wav dur=0.560 vol=10 hmsl=1452.738
+ 560.882639  PLAY file=4.wav dur=0.650 vol=10 hmsl=1419.738
+ 561.536815  PLAY file=1.wav dur=0.560 vol=10 hmsl=1386.738
+ 562.103117  PLAY file=1.wav dur=0.560 vol=10 hmsl=1353.738
+ 562.669418  PLAY file=5.wav dur=0.680 vol=10 hmsl=1320.738
+ 563.352886  PLAY file=1.wav dur=0.560 vol=10 hmsl=1287.738
+ 563.919187  PLAY file=1.wav dur=0.560 vol=10 hmsl=1254.738
+ 564.485489  PLAY file=5.wav dur=0.680 vol=10 hmsl=1221.738
+ 565.168956  PLAY file=1.wav dur=0.560 vol=10 hmsl=1188.738
+ 565.735258  PLAY file=1.wav dur=0.560 vol=10 hmsl=1155.738
+ 566.301560  PLAY file=6.wav dur=0.740 vol=10 hmsl=1122.738
+ 567.043610  PLAY file=1.wav dur=0.560 vol=10 hmsl=1078.738
+ 567.609911  PLAY file=1.wav dur=0.560 vol=10 hmsl=1045.738
+ 568.176213  PLAY file=6.wav dur=0.740 vol=10 hmsl=1023.738
+ 568.918263  PLAY file=1.wav dur=0.560 vol=10 hmsl=979.000
+ 569.484565  PLAY file=1.wav dur=0.560 vol=10 hmsl=951.250
+ 570.050866  PLAY file=7.wav dur=0.690 vol=10 hmsl=928.000
+ 570.744098  PLAY file=6.wav dur=0.740 vol=10 hmsl=909.250
+ 571.486148  PLAY file=9.wav dur=0.660 vol=10 hmsl=891.250
+ 572.150088  PLAY file=3.wav dur=0.560 vol=10 hmsl=883.000
+ 572.716389  PLAY file=2.wav dur=0.480 vol=10 hmsl=879.000
  760.200000  END
