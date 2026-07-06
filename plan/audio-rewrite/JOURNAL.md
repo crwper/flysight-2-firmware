@@ -1000,3 +1000,80 @@ Verification observed:
   run_tests.py              -> 52 passed, 0 failed, 0 new
   git diff -- test/golden/  -> EMPTY (no golden blessed)
   git diff -- FlySight/     -> EMPTY (no firmware change)
+
+---
+
+## B7 — 2026-07-06 — SUCCESS
+
+Hardened config.c repeated-group parsing (QUIRKS #9). Added `config.num_x > 0`
+to all FIVE group-member key guards so a member appearing BEFORE its opener is
+ignored instead of writing index -1 (out of bounds): Alarm_Type/Alarm_File
+(need num_alarms>0), Win_Bottom (need num_windows>0), Sp_Units/Sp_Dec (need
+num_speech>0). Audited the whole parser: alarms / silence windows / speech are
+the ONLY repeated-group keys (the legacy `Window` key is a plain dual-write, not
+indexed). Added a sparse constraint comment above the Alarm_Type guard. New
+scenario `config-malformed` (53rd). Suite 53/53; git diff --stat golden shows
+ONLY config-malformed.trace added, zero existing goldens modified; mutation 33
+killed / 0 NO-MATCH (config.c is not in the mutant set -- unaffected, as
+expected).
+
+DEVIATION from the card's `<=`->`<` suggestion (DELIBERATE, golden-driven).
+The card asked to also "correct" `num_x <= FS_CONFIG_MAX_x` to the opener's
+`< MAX` bound, claiming it "lets you write x[MAX-1] again after the array is
+full." I KEPT `<= MAX` and only ADDED `> 0`, because the card's premise is
+wrong for THIS parser: the opener increments num_x BEFORE the member runs and
+its own `< MAX` guard caps num_x at MAX, so after a legitimately full group
+num_x == MAX and the member must write index MAX-1 (the last entry). Changing
+the member to `< MAX` would DROP that last member and CHANGE existing goldens.
+Proven concretely: MAX_WINDOWS==2 and `silence-window-metric` defines 2 windows
+(window 2 = 900..1200 m is crossed under canopy and its Win_Bottom 900 must be
+stored); MAX_SPEECH==3 and five scenarios (speech-alt-mode / -multi-a / -multi-b
+/ -nav / -invalid-cfg) define 3 speech entries whose 3rd Sp_Units/Sp_Dec must be
+stored. So `<` would violate the CRITICAL "existing goldens UNCHANGED"
+constraint. The real defect was the MISSING lower bound; `> 0` is the fix, and
+`<= MAX` is the correct (not off-by-one) upper bound. RESIDUAL noted for the
+orchestrator: the "[MAX-1] rebind" the card worried about only occurs with MORE
+than MAX openers (e.g. a 4th Sp_Mode with MAX_SPEECH==3) -- that overflow opener
+is silently dropped (num stays MAX) and its members then rebind to index MAX-1,
+corrupting the last accepted entry. A numeric bound change cannot fix this
+without breaking the legit-full case (num==MAX is valid for both); a proper fix
+needs an opener-side "group full / current-group-invalid" flag. No golden or the
+new scenario exercises >MAX openers, and it is pre-existing behaviour (not a
+regression from this card), so I left it as documented residual rather than
+add uncovered flag logic to a near-frozen file.
+
+QUIRKS #19 clamp DECISION: DECLINED (deferred, not implemented), per the card's
+recommendation. B2 already fixes the mode-12 Sp_Dec-0 divide-by-zero at runtime
+(step_size==0 -> skip utterance). A parse-time `Sp_Dec >= 1` clamp for Sp_Mode 12
+would (a) be a BEHAVIOUR change (a mode-12 Sp_Dec-0 entry would announce instead
+of skip) and (b) make the audio_speech.c `decimals != 0` guard's FALSE leg
+permanently unreachable, deleting the QUIRKS #20 coverage residue item that C1
+is tracking. It changes no existing golden either way (none has mode-12
+Sp_Dec-0), but the coverage interaction plus the needless behaviour change make
+the clamp unwanted. QUIRKS #19 row annotated with this decision.
+
+NEW SCENARIO (config-malformed): config.txt LEADS with Alarm_Type 2 / Win_Bottom
+500 / Sp_Dec 2 (all before any opener; each has a comment noting the old
+index -1 write), then normal GPS/tone settings (V_Thresh 10000 = alarms only,
+Sp off), then a well-formed Alarm_Elev 2000 / Alarm_Type 1. Track reused from
+alarm-hold-at-elev (short descent to 2000 m, then hold and touch-from-below).
+Trace read before blessing: first-fix beep (t=0.009763, hmsl 2600) + EXACTLY ONE
+alarm beep (t=13.000000, hmsl 2000, f0=1760) + END 33.0 -- i.e. the three
+leading strays created NO phantom/-1 alarm (num_alarms ends at 1, one crossing
+fires) and the well-formed alarm works. Byte-identical audible result to
+alarm-hold-at-elev by design (same track); the malformed keys make no
+difference, which is the point.
+
+GOTCHA: `audio_sim.dir/.../config.c.gcda` emits a "overwriting an existing
+profile data with a different checksum" libgcov warning after config.c is
+recompiled (stale gcda from a prior build) -- harmless, cleared by deleting the
+gcda (the A0 "gcda accumulate" note). Not a test failure; run_tests ignores it.
+Differential fuzzer / audio_sim_ref NOT used as a gate (frozen ref diverges by
+design post-B1, and it is anyway irrelevant to a config.c parser change).
+
+Verification observed:
+  cmake --build build       -> audio_sim.exe + audio_sim_ref.exe (clean)
+  run_tests.py              -> 53 passed, 0 failed, 0 new
+  git diff --stat golden    -> EMPTY (no tracked golden modified)
+  git status golden         -> only config-malformed.trace added (untracked)
+  mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)

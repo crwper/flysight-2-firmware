@@ -383,11 +383,16 @@ FS_Config_Result_t FS_Config_Read(const char *filename)
 			config.alarms[config.num_alarms - 1].type = 0;
 			config.alarms[config.num_alarms - 1].filename[0] = '\0';
 		}
-		if (!strcmp(name, "Alarm_Type") && config.num_alarms <= FS_CONFIG_MAX_ALARMS)
+		/* Group-member keys require num_x > 0 so a member appearing before its
+		 * opener (Alarm_Elev/Win_Top/Sp_Mode) is ignored, not written to index
+		 * -1 (QUIRKS #9). The <= MAX upper bound is retained: the opener's
+		 * < MAX pre-increment guard caps num_x at MAX, so num_x - 1 is always a
+		 * valid index for the most recently opened entry. */
+		if (!strcmp(name, "Alarm_Type") && config.num_alarms > 0 && config.num_alarms <= FS_CONFIG_MAX_ALARMS)
 		{
 			config.alarms[config.num_alarms - 1].type = val;
 		}
-		if (!strcmp(name, "Alarm_File") && config.num_alarms <= FS_CONFIG_MAX_ALARMS)
+		if (!strcmp(name, "Alarm_File") && config.num_alarms > 0 && config.num_alarms <= FS_CONFIG_MAX_ALARMS)
 		{
 			result[8] = '\0';
 			strncpy(config.alarms[config.num_alarms - 1].filename, result,
@@ -405,7 +410,7 @@ FS_Config_Result_t FS_Config_Read(const char *filename)
 			++config.num_windows;
 			config.windows[config.num_windows - 1].top = val * 1000;
 		}
-		if (!strcmp(name, "Win_Bottom") && config.num_windows <= FS_CONFIG_MAX_WINDOWS)
+		if (!strcmp(name, "Win_Bottom") && config.num_windows > 0 && config.num_windows <= FS_CONFIG_MAX_WINDOWS)
 		{
 			config.windows[config.num_windows - 1].bottom = val * 1000;
 		}
@@ -423,11 +428,11 @@ FS_Config_Result_t FS_Config_Read(const char *filename)
 			config.speech[config.num_speech - 1].units = FS_CONFIG_UNITS_MPH;
 			config.speech[config.num_speech - 1].decimals = 1;
 		}
-		if (!strcmp(name, "Sp_Units") && config.num_speech <= FS_CONFIG_MAX_SPEECH)
+		if (!strcmp(name, "Sp_Units") && config.num_speech > 0 && config.num_speech <= FS_CONFIG_MAX_SPEECH)
 		{
 			config.speech[config.num_speech - 1].units = val;
 		}
-		if (!strcmp(name, "Sp_Dec") && config.num_speech <= FS_CONFIG_MAX_SPEECH)
+		if (!strcmp(name, "Sp_Dec") && config.num_speech > 0 && config.num_speech <= FS_CONFIG_MAX_SPEECH)
 		{
 			config.speech[config.num_speech - 1].decimals = val;
 		}

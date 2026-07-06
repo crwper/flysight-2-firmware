@@ -1,0 +1,47 @@
+; Malformed config: group-member keys appear BEFORE their group opener.
+;
+; This exercises the QUIRKS #9 fix in FlySight/config.c. The three keys
+; below (Alarm_Type, Win_Bottom, Sp_Dec) are group MEMBERS whose openers
+; (Alarm_Elev, Win_Top, Sp_Mode) have not been seen yet, so num_alarms /
+; num_windows / num_speech are all still 0. The old parser wrote these to
+; index num_x - 1 == -1 (out of bounds). The fix requires num_x > 0, so a
+; leading member is IGNORED with no effect.
+;
+; Pins:
+;   1. The three leading strays are ignored -- no phantom / index -1 alarm
+;      is created (num_alarms stays 0 until the real Alarm_Elev below).
+;   2. The well-formed alarm further down (Alarm_Elev 2000 / Alarm_Type 1)
+;      still parses and fires once, descending through 2000 m (~t=13.0).
+;
+; Expected trace: first-fix beep + exactly one alarm beep at t=13.0 + END.
+; (Identical audible result to alarm-hold-at-elev, which shares this track;
+;  the leading malformed keys must make no difference.)
+
+; --- stray group-member keys BEFORE any opener (must be ignored) ---
+Alarm_Type: 2    ; no preceding Alarm_Elev -> ignored (was writing alarms[-1])
+Win_Bottom: 500  ; no preceding Win_Top    -> ignored (was writing windows[-1])
+Sp_Dec:     2    ; no preceding Sp_Mode    -> ignored (was writing speech[-1])
+
+Model:     7
+Rate:      200
+
+Mode:      2
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Sp_Volume: 6
+
+V_Thresh:  10000 ; alarms only (no tone/speech clutter)
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 0
+Win_Below: 0
+DZ_Elev:   0
+
+; --- well-formed alarm (opener then members) ---
+Alarm_Elev: 2000
+Alarm_Type: 1
