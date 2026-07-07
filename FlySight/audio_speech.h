@@ -119,7 +119,7 @@ void FS_Speech_BuildValue(FS_Speech_t *sp,
                           const FS_FlightData_t *fd,
                           const FS_GNSS_Data_t *current,
                           uint8_t cur_speech);
-void FS_Speech_BuildAltStep(FS_Speech_t *sp,
+void FS_Speech_BuildAltMode(FS_Speech_t *sp,
                             const FS_Config_Data_t *config,
                             int32_t step);
 void FS_Speech_BuildGroundElev(FS_Speech_t *sp,

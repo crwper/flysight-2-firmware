@@ -27,7 +27,7 @@ AS = TEST.parent / "FlySight" / "audio_speech.c"
 
 # --- Card A7 arbiter mutants (M31-M33) ---
 # Multi-line anchors are defined here for readability. M32 swaps the CH_ALARM and
-# CH_ALT_STEP "priority rows" in producerTask: on a same-sample alarm+alt-step
+# CH_ALT_MODE "priority rows" in producerTask: on a same-sample alarm+alt-step
 # collision the step is announced instead of the alarm firing.
 _M32_OLD = (
     "\t\t\t\tif (fired_index != state.alarm.num_alarms)\n"
@@ -35,15 +35,15 @@ _M32_OLD = (
     "\t\t\t\t\tArbiter_FireAlarm(&config, fired_index);\n"
     "\t\t\t\t\tFS_Speech_Clear(&state.speech);\n"
     "\t\t\t\t}\n"
-    "\t\t\t\telse if (want_alt_step && !FS_Speech_HasPending(&state.speech))\n"
+    "\t\t\t\telse if (want_alt_mode && !FS_Speech_HasPending(&state.speech))\n"
     "\t\t\t\t{\n"
-    "\t\t\t\t\tFS_Speech_BuildAltStep(&state.speech, &config, step);\n"
+    "\t\t\t\t\tFS_Speech_BuildAltMode(&state.speech, &config, step);\n"
     "\t\t\t\t}"
 )
 _M32_NEW = (
-    "\t\t\t\tif (want_alt_step && !FS_Speech_HasPending(&state.speech))\n"
+    "\t\t\t\tif (want_alt_mode && !FS_Speech_HasPending(&state.speech))\n"
     "\t\t\t\t{\n"
-    "\t\t\t\t\tFS_Speech_BuildAltStep(&state.speech, &config, step);\n"
+    "\t\t\t\t\tFS_Speech_BuildAltMode(&state.speech, &config, step);\n"
     "\t\t\t\t}\n"
     "\t\t\t\telse if (fired_index != state.alarm.num_alarms)\n"
     "\t\t\t\t{\n"
@@ -181,11 +181,11 @@ MUTANTS = [
                "tVal = tVal;",
      "distance speech: rounding offset dropped", AS),
     # --- arbiter / policy layer (card A7) ---
-    ("M31", 1, "[ZONE_SILENCE_WINDOW]  = SUP_TONE | SUP_ALT_STEP,",
+    ("M31", 1, "[ZONE_SILENCE_WINDOW]  = SUP_TONE | SUP_ALT_MODE,",
                "[ZONE_SILENCE_WINDOW]  = SUP_TONE,",
-     "arbiter: drop silence-window -> ALT_STEP suppression (kill: silence-window-metric)"),
+     "arbiter: drop silence-window -> ALT_MODE suppression (kill: silence-window-metric)"),
     ("M32", 1, _M32_OLD, _M32_NEW,
-     "arbiter: swap ALARM/ALT_STEP priority rows (kill: alarm-altstep-collision)"),
+     "arbiter: swap ALARM/ALT_MODE priority rows (kill: alarm-altstep-collision)"),
     ("M33", 1, _M33_OLD, _M33_NEW,
      "arbiter: alarm crossing no longer cancels queued speech (kill: alarm-type-none)"),
 ]
@@ -207,9 +207,13 @@ def main():
     originals = {}
 
     def base_bytes(path):
+        # Match/mutate on LF-normalized bytes: a CRLF working copy (e.g. after
+        # a `git checkout --` with autocrlf) would silently NO-MATCH every
+        # multi-line "\n" anchor. The pristine bytes are kept for the final
+        # restore, so the file is byte-identical after the run either way.
         if path not in originals:
             originals[path] = path.read_bytes()
-        return originals[path]
+        return originals[path].replace(b"\r\n", b"\n")
 
     results = []
 

@@ -69,19 +69,19 @@ typedef enum
 	CH_ALARM,           // alarm crossings (beep/chirp/file) -- never suppressed
 	CH_STARTUP,         // init speech + first-fix beep
 	CH_ALT_GROUND_ELEV, // ground-elevation confirmation
-	CH_ALT_STEP,        // altitude-step announcements
+	CH_ALT_MODE,        // altitude-mode announcements
 	CH_SPEECH,          // periodic rotational speech
 	CH_TONE,            // continuous tone
 	CH_COUNT
 } AudioChannel_t;
 
 #define SUP_TONE       (1u << CH_TONE)
-#define SUP_ALT_STEP   (1u << CH_ALT_STEP)
+#define SUP_ALT_MODE   (1u << CH_ALT_MODE)
 
 // Suppression zones -> the channels they silence (policy as data). Entering a
 // zone stops current playback + clears the speech queue
 // (Arbiter_ApplySuppression); while inside, the masked channels cannot start.
-// ZONE_ALT_STEP_WINDOW is a fourth zone beyond the brief's three; it is
+// ZONE_ALT_MODE_WINDOW is a fourth zone beyond the brief's three; it is
 // preserved verbatim from the old AltModeSource code (see JOURNAL A5).
 // ZONE_SPEECH_ACTIVE (the old toneHold) is applied dynamically at the consumer
 // tick via Arbiter_t.tone_hold rather than through this producer-side mask.
@@ -89,7 +89,7 @@ typedef enum
 {
 	ZONE_ALARM_WINDOW,    // near a configured alarm elevation
 	ZONE_SILENCE_WINDOW,  // inside a configured silence window
-	ZONE_ALT_STEP_WINDOW, // near an altitude-step announcement elevation
+	ZONE_ALT_MODE_WINDOW, // near an altitude-mode announcement elevation
 	ZONE_SPEECH_ACTIVE,   // a speech token is currently playing (old toneHold)
 	ZONE_COUNT
 } SuppressionZone_t;
@@ -97,8 +97,8 @@ typedef enum
 static const uint8_t suppression_table[ZONE_COUNT] =
 {
 	[ZONE_ALARM_WINDOW]    = SUP_TONE,
-	[ZONE_SILENCE_WINDOW]  = SUP_TONE | SUP_ALT_STEP,
-	[ZONE_ALT_STEP_WINDOW] = SUP_TONE,
+	[ZONE_SILENCE_WINDOW]  = SUP_TONE | SUP_ALT_MODE,
+	[ZONE_ALT_MODE_WINDOW] = SUP_TONE,
 	[ZONE_SPEECH_ACTIVE]   = SUP_TONE,
 };
 
@@ -121,10 +121,10 @@ typedef struct
 	uint8_t           num_alarms;
 } AlarmSource_t;
 
-// Altitude-mode source: silence + alt-step suppression zones, the Alt_Step
-// announcement decision, and the say-altitude latch (old FLAG_SAY_ALTITUDE):
+// Altitude-mode source: silence + altitude-mode suppression zones, the
+// periodic announcement decision, and the say-altitude latch (old FLAG_SAY_ALTITUDE):
 // the ground-elevation announcement is pending until vAcc is good and it plays.
-// The latch gates only ALTITUDE indications (QUIRKS #17, B4): Alt_Step
+// The latch gates only ALTITUDE indications (QUIRKS #17, B4): altitude-mode
 // announcements AND Sp_Mode-12 speech entries; non-altitude periodic speech
 // (vertical speed, glide, direction, distance...) plays regardless.
 typedef struct
@@ -368,7 +368,7 @@ static void SpeechSource_MaybeSpeak(
 		{
 			// QUIRKS #17: only ALTITUDE (mode-12) entries wait for the ground-
 			// elevation announcement (say_altitude latch), exactly like the
-			// Alt_Step announcements. A gated altitude entry is SKIPPED and the
+			// altitude-mode announcements. A gated altitude entry is SKIPPED and the
 			// rotation advances (like the ALT_MIN floor skip), NOT blocked, so a
 			// mixed rotation keeps voicing its non-altitude entries meanwhile.
 			if ((config->speech[state.speech_src.cur_speech].mode != FS_CONFIG_MODE_ALTITUDE) ||
@@ -557,11 +557,11 @@ static void AlarmSource_Update(
 	}
 }
 
-// Altitude-mode source: silence-window suppression (TONE + ALT_STEP), Alt_Step
-// window suppression (TONE, with the ALT_MIN floor), and the Alt_Step
-// announcement decision. want_alt_step folds in every self-contained guard,
-// including the silence-window ALT_STEP suppression read back from
-// suppress_mask (only ZONE_SILENCE_WINDOW sets SUP_ALT_STEP); the arbiter ANDs
+// Altitude-mode source: silence-window suppression (TONE + ALT_MODE),
+// altitude-mode window suppression (TONE, with the ALT_MIN floor), and the
+// announcement decision. want_alt_mode folds in every self-contained guard,
+// including the silence-window ALT_MODE suppression read back from
+// suppress_mask (only ZONE_SILENCE_WINDOW sets SUP_ALT_MODE); the arbiter ANDs
 // it with "no alarm fired" and "speech queue empty" before building.
 static void AltModeSource_Update(
 	const FS_Config_Data_t *config,
@@ -569,7 +569,7 @@ static void AltModeSource_Update(
 	bool prev_had_fix,
 	int32_t prevHMSL,
 	uint8_t *suppress_mask,
-	bool *want_alt_step,
+	bool *want_alt_mode,
 	int32_t *step_out)
 {
 	const int32_t velD = current->velD / 10;
@@ -605,11 +605,11 @@ static void AltModeSource_Update(
 		    (current->hMSL >= step_elev - config->alarm_window_below) &&
 		    (current->hMSL - config->dz_elev >= ALT_MIN * 1000))
 		{
-			*suppress_mask |= suppression_table[ZONE_ALT_STEP_WINDOW];
+			*suppress_mask |= suppression_table[ZONE_ALT_MODE_WINDOW];
 		}
 	}
 
-	*want_alt_step = false;
+	*want_alt_mode = false;
 	*step_out = step;
 
 	if (prev_had_fix)
@@ -620,12 +620,12 @@ static void AltModeSource_Update(
 		if ((config->alt_step > 0) &&
 		    (prevHMSL - config->dz_elev >= ALT_MIN * 1000) &&
 		    !state.altmode.say_altitude &&
-		    !(*suppress_mask & SUP_ALT_STEP) &&
+		    !(*suppress_mask & SUP_ALT_MODE) &&
 		    (step_elev >= min && step_elev < max) &&
 		    ABS(velD) >= config->threshold &&
 		    current->gSpeed >= config->hThreshold)
 		{
-			*want_alt_step = true;
+			*want_alt_mode = true;
 		}
 	}
 }
@@ -716,7 +716,7 @@ static void Arbiter_GrantTone(const FS_Config_Data_t *config)
 }
 
 // Consumer-tick grant. Speech (any queued utterance -- init, ground-elev,
-// alt-step, periodic) drains first; the empty-queue branch then grants STARTUP
+// altitude-mode, periodic) drains first; the empty-queue branch then grants STARTUP
 // (first-fix beep) ahead of ALT_GROUND_ELEV (which re-queues speech). tone_hold
 // tracks whether a speech token is currently playing.
 static void Arbiter_ConsumerTick(const FS_Config_Data_t *config)
@@ -786,7 +786,7 @@ static void producerTask(void)
 
 	// The one and only GNSS -> SI conversion. valid3d / vAccGood fold the old
 	// FLAG_HAS_FIX / FLAG_VERTICAL_ACC tests; the float metric path works from
-	// `fd`, while the alarm/alt-step crossings keep the integer `current` so
+	// `fd`, while the alarm/altitude-step crossings keep the integer `current` so
 	// their threshold timing stays byte-exact.
 	const FS_FlightData_t fd = FS_FlightData_FromGNSS(&current);
 
@@ -799,13 +799,13 @@ static void producerTask(void)
 
 			uint8_t suppress_mask = 0;
 			uint8_t fired_index;
-			bool want_alt_step;
+			bool want_alt_mode;
 			int32_t step;
 
 			AlarmSource_Update(&config, &current, prev_had_fix, state.prevHMSL,
 			                   &suppress_mask, &fired_index);
 			AltModeSource_Update(&config, &current, prev_had_fix, state.prevHMSL,
-			                     &suppress_mask, &want_alt_step, &step);
+			                     &suppress_mask, &want_alt_mode, &step);
 
 			// Rising-edge stop: entering a TONE suppression zone stops the sound.
 			Arbiter_ApplySuppression((suppress_mask & SUP_TONE) != 0);
@@ -820,9 +820,9 @@ static void producerTask(void)
 					Arbiter_FireAlarm(&config, fired_index);
 					FS_Speech_Clear(&state.speech);
 				}
-				else if (want_alt_step && !FS_Speech_HasPending(&state.speech))
+				else if (want_alt_mode && !FS_Speech_HasPending(&state.speech))
 				{
-					FS_Speech_BuildAltStep(&state.speech, &config, step);
+					FS_Speech_BuildAltMode(&state.speech, &config, step);
 				}
 			}
 		}

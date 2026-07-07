@@ -63,7 +63,7 @@ layers are pure (state passed in by pointer). Config is read-only end to end.
   an array of `FS_SpeechToken_t` enum tokens (`TOK_NUM_*`, `TOK_TENS_*`,
   `TOK_HUNDRED/THOUSAND`, `TOK_MINUS/DOT`, `TOK_UNIT_*`, `TOK_LABEL_*`,
   `TOK_SUFFIX_LEFT/RIGHT`, `TOK_RAW_FILE`) plus one token->filename table
-  (`token_files[]`). `FS_Speech_Build*` fill the queue (value, alt-step,
+  (`token_files[]`). `FS_Speech_Build*` fill the queue (value, altitude-mode,
   ground-elev, init digits, init file); `FS_Speech_PlayNext` returns the next
   wav filename and advances. The renderer starts **one wav per idle consumer
   tick**, the same cadence as the old char interpreter. A value that cannot be
@@ -77,9 +77,9 @@ layers are pure (state passed in by pointer). Config is read-only end to end.
   ground-elev latch), `SpeechSource` (rotation + period), and the startup
   first-fix beep / init speech. The **arbiter** is the *only* caller of
   `FS_Audio_*`. Priority (high to low): `ALARM > STARTUP > ALT_GROUND_ELEV >
-  ALT_STEP > SPEECH > TONE`. Suppression zones OR a channel bitmask into a
+  ALT_MODE > SPEECH > TONE`. Suppression zones OR a channel bitmask into a
   shared mask: alarm windows suppress `{TONE}`; silence windows suppress
-  `{TONE, ALT_STEP}`; active speech suppresses `{TONE}` (the old `tone_hold`).
+  `{TONE, ALT_MODE}`; active speech suppresses `{TONE}` (the old `tone_hold`).
   Entering a zone stops the playing sound; alarms are never suppressed and
   never gated on vAcc. The producer task (GNSS rate) writes the inactive
   `ToneSpec` slot and publishes it to the consumer-timer ISR with a single

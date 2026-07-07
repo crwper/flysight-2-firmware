@@ -366,7 +366,7 @@ void FS_Speech_BuildValue(
 		break;
 	case FS_CONFIG_MODE_ALTITUDE:
 		// Altitude announcement uses the integer step arithmetic (like the
-		// alt-step / ground-elev builders), byte-identical. Sp_Dec 0 makes
+		// altitude-mode / ground-elev builders), byte-identical. Sp_Dec 0 makes
 		// step_size == 0 (a divide-by-zero, QUIRKS #19): skip the utterance
 		// rather than divide.
 		if (decimals != 0)
@@ -460,7 +460,7 @@ void FS_Speech_BuildValue(
 	sp->pos = (uint8_t) ptr;
 }
 
-void FS_Speech_BuildAltStep(
+void FS_Speech_BuildAltMode(
 	FS_Speech_t *sp,
 	const FS_Config_Data_t *config,
 	int32_t step)
