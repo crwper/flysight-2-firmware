@@ -1,0 +1,45 @@
+; An alarm with an OUT-OF-RANGE Alarm_Type (5). config.c does not clamp
+; Alarm_Type (it stores the parsed value verbatim), so a type outside 0..4 is
+; parser-valid. B5 filters only type == 0 from the alarm list, so a type-5 entry
+; is KEPT and its crossing still fires: Arbiter_FireAlarm's `switch (type)` has
+; no case for 5 and no default, so it plays NOTHING, but the producer still runs
+; FS_Speech_Clear after the fire -- i.e. the crossing cancels queued speech with
+; no sound (the same shape the old type-0 had, before B5 dropped type 0).
+; Identical to alarm-cancels-speech except Alarm_Type 1 -> 5.
+; Characterizes / covers: audio_control.c the alarm-type switch's no-match
+; (fall-through) arm in Arbiter_FireAlarm -- reachable only via an out-of-range
+; Alarm_Type (config.c performs no range check).
+
+Model:     7
+Rate:      200
+
+Mode:      2     ; Glide ratio
+Min:       0
+Max:       300
+Limits:    1
+Volume:    6
+
+Mode_2:    9     ; Change in value 1
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100
+Max_Rate:  500
+
+Sp_Rate:   1     ; speak every second
+Sp_Volume: 6
+
+Sp_Mode:   1     ; vertical speed
+Sp_Units:  1     ; mph
+Sp_Dec:    0
+
+V_Thresh:  1000
+H_Thresh:  0
+
+Use_SAS:   1
+
+Win_Above: 0     ; no suppression window -- queue not pre-cleared before crossing
+Win_Below: 0
+DZ_Elev:   0
+
+Alarm_Elev: 2500
+Alarm_Type: 5    ; OUT OF RANGE (>4): kept by the type!=0 filter, fires but plays nothing

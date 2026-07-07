@@ -109,4 +109,4 @@ git -C .. show --stat HEAD                            # only the card's allowed 
 | B5-type0-alarms | done | 6ec6609 |
 | B6-dead-tokens | done | f8e72a7 |
 | B7-config-parser | done | 15d6d48 (+8a1e573 pin residual) |
-| C1-closeout | pending | |
+| C1-closeout | done | (this commit) |

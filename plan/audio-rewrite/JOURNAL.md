@@ -1140,3 +1140,133 @@ Verification observed:
   git diff --stat golden    -> ONLY config-malformed.trace (26 ins / 3 del), no
                                other golden modified
   git diff -- FlySight/     -> EMPTY (config.c and all firmware unchanged)
+
+---
+
+## C1 — 2026-07-06 — SUCCESS
+
+Phase C rewrite closeout. NO firmware change (FlySight/* frozen at closeout);
+touched only test/ (README, CMakeLists, scripts, 2 new scenarios + goldens),
+test/QUIRKS.md, and the plan docs. Suite 53 -> 55 green.
+
+MUTATION (milestone): `python scripts/mutation_test.py` -> **33 killed, 0
+needing attention, of 33 mutants** (0 NO-MATCH). No anchor had drifted over
+Phase B's later cards (B5 already re-anchored M03/M32 for the filtered alarm
+list); no re-anchoring needed at C1.
+
+COVERAGE (fresh gcda, 55 scenarios, filter
+".*audio_control|.*flight_params|.*audio_speech"):
+  audio_control.c   line 272/272 (100%)   branch 193/193 (100%)
+  audio_speech.c    line 216/217          branch 105/107
+  flight_params.c   line  85/109          branch  51/ 69
+Two branches were uncovered-and-REACHABLE before C1 (an unexplained gap the
+card forbids); I closed each with ONE new scenario, read fully before blessing:
+  * audio_control.c:663 -- the alarm-type `switch` no-match arm in
+    Arbiter_FireAlarm. This became uncovered at B5: B5's `type != 0` init
+    filter dropped type-0 alarms before they reach the switch, so nothing
+    exercised the fall-through anymore (types 1-4 all hit explicit cases). It
+    is REACHABLE because config.c does NOT clamp Alarm_Type (config.c:393
+    stores the parsed value verbatim), so `Alarm_Type 5` is parser-valid,
+    survives the `!=0` filter, and fires the no-match arm (no sound, still
+    cancels queued speech -- the shape old type-0 had). NEW scenario
+    `alarm-type-unknown` (clone of alarm-cancels-speech, type 1 -> 5): both the
+    t=510 climb crossing and the t=843 freefall crossing fire silently (only
+    the first-fix beep remains in the trace, vs alarm-cancels-speech's alarm
+    beep that cut 9.wav).
+  * audio_speech.c:372 FALSE leg / line 388 -- the mode-12 `if (decimals != 0)`
+    guard's else (QUIRKS #19 Sp_Dec-0 skip). NEW scenario `speech-alt-dec0`
+    (clone of speech-alt-only-low, Sp_Dec 100 -> 0): above ALT_MIN the
+    SpeechSource rotation DOES call the builder for the mode-12 entry, which
+    then takes the else and emits nothing -- so ZERO altitude announcements in
+    the whole jump (where speech-alt-only-low voiced "5000 feet" etc.),
+    confirming the skip. Note: speech + tone share the V_Thresh/H_Thresh gate
+    (SpeechSource_MaybeSpeak is inside the same gated block as setTone), so the
+    glide tone is legitimately present in this scenario's golden.
+Remaining residue = FOUR branches, all documented (QUIRKS #20 C1 FINAL):
+  (a) flight_params LEFT_RIGHT/mode-10 metrics entry (108[case-10]/205/208/213/
+      215) -- reserved, config.c rejects mode 10 (QUIRKS #15) -- ALLOWED.
+  (b) flight_params FS_FlightParams_GetSASCorrectionFactor (241/245 + body) --
+      develop-merge scaffolding, intentionally unused (QUIRKS #20b) -- EXEMPT.
+  (c) audio_speech.c:86 (labelToken `default`) and :423 (Step-3-suffix `switch`
+      implicit no-match) -- structurally UNREACHABLE: BuildValue's value switch
+      marks `valid` only for modes {0-7,11,12} and returns early otherwise, and
+      those exact modes are all explicit cases in both downstream switches, so
+      no parser-valid config reaches the default arm. Same dead-arm class as
+      the flight_params no-match; the frozen module can't have the arms
+      deleted. DOCUMENTED as residue per the card's "genuinely-unreachable ->
+      document, don't bless a gap" clause. I did NOT stop-and-report because
+      these are justifiable (not "residue I can neither cover nor justify").
+
+REFERENCE / FUZZER RETIRED. Deleted test/reference/audio_control_orig.c and
+the reference/ dir; removed the audio_sim_ref CMake target and simplified the
+COVERAGE block (the per-target FS_COVERAGE gating existed only to keep gcov
+flags out of the shared-source ref target -- now audio_sim is the only target
+compiling the firmware sources, so `--coverage` is applied to them directly).
+Fresh `rm -rf build; cmake -B build; cmake --build build` -> only audio_sim.exe,
+clean, no warnings; 55/55. Converted fuzz_diff.py -> fuzz_crash.py (git mv):
+crash-only, drops the ref comparison, runs audio_sim alone on random
+parser-valid inputs and flags any non-zero exit (the mode-12 Sp_Dec-0
+divide-by-zero was fixed in B2, so a crash would be a NEW defect). Smoke test:
+40 iterations, 0 crashes. No build target references the deleted reference; the
+only surviving `audio_sim_ref` mentions are history comments in CMakeLists.txt
+and the fuzz_crash.py docstring.
+
+DOCS. test/README.md rewritten for the rewrite era: intro/status now say the
+rewrite is complete and the harness is the regression net; added a "The
+rewritten module (what lives where)" section (flight_params = metrics,
+audio_speech = utterance builder+renderer, audio_control = sources+arbiter+glue,
+one `state` struct, no file-scope statics, const config) plus the two payoff
+how-tos ("How to add a new audio source" -- struct + update fn computing a
+request + arbiter priority row + suppression mask, no bare statics; "How to add
+a speech token" -- enum + filename table + builder); widened the coverage
+filter and documented the residue; updated the mutation pass (33, multi-file,
+re-anchor on move); replaced the old "keep the oracle / audio_sim2 /
+differential fuzz" section with the rewrite-complete reality + fuzz_crash.
+QUIRKS.md: every row now carries a final state -- #6 -> DONE (A1 state reset),
+#7 -> DONE (A7 const), #10 -> DONE (convention preserved), #15 -> PRESERVED
+(C1-confirmed reserved residue), #20 -> DONE (C1 FINAL coverage resolution).
+Only #2 stays OPEN (asset-pending): re-checked TEMP/AUDIO, 11.wav still absent.
+
+OPEN ITEMS at closeout:
+  1. 11.wav asset (QUIRKS #2) -- still absent; alt-step-feet un-re-blessed.
+  2. A6/A6-followup producer->ISR ToneSpec handoff is SIM-INVISIBLE -- verified
+     by review only; needs a hardware listen-test (see handoff).
+  3. Two audio_speech switch-default arms are unreachable residue (documented).
+
+HANDOFF TO MICHAEL
+  * Hardware listen-test checklist (the sim cannot cover these):
+    - init speech mode (Init_Mode 1) AND init file mode (Init_Mode 2) play at
+      power-on;
+    - first-fix beep sounds (after the init speech queue drains, QUIRKS #3);
+    - glide tone tracks through a real jump (pitch follows glide, rate sweeps);
+    - one alarm fires at its exact altitude (competition-critical);
+    - one altitude announcement (ground-elev confirmation + an Alt_Step call);
+    - THE A6 PRODUCER->ISR TONE HANDOFF UNDER REAL ISR LOAD: listen for
+      pitch/chirp glitches during rapid config value swings (a torn read would
+      briefly mismatch pitch/chirp/rate). This is the double-buffered ToneSpec
+      + single 32-bit index flip; note the A6 compiler-barrier follow-up
+      (commit 20f0ba3) that stops the optimizer sinking draft-slot writes past
+      the publish. SIM-INVISIBLE (single-threaded sim), so ear is the only gate.
+  * `11.wav` asset (QUIRKS #2, still pending): when it lands in TEMP/AUDIO,
+    re-bless `test/golden/alt-step-feet.trace` -- the 11,000 ft "eleven" flips
+    PLAYFAIL->PLAY with a downstream timestamp cascade; read the whole diff,
+    confirm it is exactly that one PLAYFAIL->PLAY + cascade, bless, close #2.
+  * develop merge notes (from the card):
+    - enable_nav gate: fold it in as one more `valid = false` condition in
+      FS_FlightParams_Get, and add on/off scenarios;
+    - ActiveLook switches to FS_FlightParams_* (their flight_params.c stub is
+      superseded by this branch's) -- verify ActiveLook displayed values
+      pre/post the merge;
+    - harness config.c compilation will need a fake `FS_State_Get` for the
+      Device_ID read that develop's config.c pulls in.
+
+Verification observed:
+  rm -rf build; cmake -B build ...; cmake --build build -> audio_sim.exe only,
+                              clean, no warnings (no audio_sim_ref target)
+  run_tests.py              -> 55 passed, 0 failed, 0 new
+  mutation_test.py          -> 33 killed, 0 needing attention, 0 NO-MATCH
+  gcovr (widened, fresh gcda)-> audio_control 100/100 line/branch; audio_speech
+                              & flight_params 100% reachable (residue a/b + the
+                              two unreachable switch-default arms)
+  fuzz_crash.py --iterations 40 -> 40 ok, 0 crash
+  git diff -- FlySight/     -> EMPTY (firmware frozen at closeout)

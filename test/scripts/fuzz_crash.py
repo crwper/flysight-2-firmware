@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
-"""Differential fuzzer for the audio rewrite (card A0).
+"""Crash-only fuzzer for the audio module (card C1).
 
-Each iteration derives, from a single seeded PRNG, a random skydive track
-(via gen_jump.py) and a random-but-parser-valid device config, then runs the
-live simulator (audio_sim) and the frozen-oracle simulator (audio_sim_ref)
-on identical inputs and byte-compares their traces. While the rewrite is in
-progress the two binaries should agree on every input; a disagreement is a
-regression.
+History: this started as `fuzz_diff.py`, a *differential* fuzzer that ran the
+live simulator (audio_sim) alongside a frozen-oracle simulator (audio_sim_ref)
+built from the pre-rewrite audio_control.c and byte-compared their traces. That
+served Phase A, where the rewrite had to stay byte-identical to the original.
+From B1 onward the metrics moved to SI floats, so the frozen integer oracle
+diverges from the new goldens on every rounding boundary BY DESIGN, and the
+differential comparison stopped being a useful gate. At C1 the reference and the
+audio_sim_ref target were retired, so this tool was converted to crash-only.
 
-The one sanctioned exception is QUIRKS #13: when a speech entry uses mode 5
-(direction to destination) or 7 (direction to bearing) and the nav gates can
-fire (End_Nav > 0 or Max_Dist > 0), speakValue reads an uninitialized tVal
-for the l/r suffix, so the two binaries may legitimately disagree on
-garbage. Those iterations are classified as `known-13` and only counted, not
-saved as failures. Every other diff is saved under fuzz-failures/<seed>/.
+Each iteration derives, from a single seeded PRNG, a random skydive track (via
+gen_jump.py) and a random-but-parser-valid device config, then runs audio_sim on
+them and checks the exit code. A non-zero exit is a crash (e.g. a host integer
+divide-by-zero, exit 0xC0000094) -- with the goldens frozen this is the cheapest
+way to hunt for a config/track combination that faults the module. The known
+mode-12 `Sp_Dec 0` divide-by-zero was fixed in B2 (the builder now skips instead
+of dividing), so a crash here would be a NEW robustness defect.
 
-Determinism: everything an iteration does is derived from random.Random(seed)
-in a fixed draw order, so `--seed N` reproduces iteration N of a plain run
-byte-for-byte.
+Determinism: everything an iteration does is derived from random.Random(seed) in
+a fixed draw order, so `--seed N` reproduces iteration N byte-for-byte.
 
 Usage (from test/):
-    python scripts/fuzz_diff.py --minutes 5
-    python scripts/fuzz_diff.py --iterations 200
-    python scripts/fuzz_diff.py --seed 137        # reproduce one iteration
+    python scripts/fuzz_crash.py --minutes 5
+    python scripts/fuzz_crash.py --iterations 200
+    python scripts/fuzz_crash.py --seed 137        # reproduce one iteration
 """
 
 import argparse
@@ -44,10 +46,9 @@ SPEECH_MODE_SET = [0, 1, 2, 3, 4, 5, 6, 7, 11, 12]
 
 
 def rand_config(rng):
-    """Build (config_text, meta) from rng. meta carries the fields the
-    known-13 classifier needs. Draw order is fixed for reproducibility."""
+    """Build config_text from rng. Draw order is fixed for reproducibility."""
     L = []
-    L.append("; fuzz_diff generated config")
+    L.append("; fuzz_crash generated config")
     L.append("Model:     7")
 
     # Track sample interval -> measurement rate (ms), clamped to parser range.
@@ -70,15 +71,14 @@ def rand_config(rng):
     L.append("Max_Rate:  500")
     L.append("Flatline:  %d" % rng.randint(0, 1))
 
-    # Speech: 0..3 entries (FS_CONFIG_MAX_SPEECH)
+    # Speech: 0..3 entries (FS_CONFIG_MAX_SPEECH). Sp_Dec 0 is drawn on
+    # purpose so mode-12 Sp_Dec-0 (the QUIRKS #19 divide-by-zero site, fixed
+    # in B2) keeps getting exercised.
     num_speech = rng.randint(0, 3)
     L.append("Sp_Rate:   %d" % (rng.randint(1, 3) if num_speech else 0))
     L.append("Sp_Volume: 6")
-    speech_modes = []
     for _ in range(num_speech):
-        m = rng.choice(SPEECH_MODE_SET)
-        speech_modes.append(m)
-        L.append("Sp_Mode:   %d" % m)
+        L.append("Sp_Mode:   %d" % rng.choice(SPEECH_MODE_SET))
         L.append("Sp_Units:  %d" % rng.randint(0, 2))
         L.append("Sp_Dec:    %d" % rng.randint(0, 3))
 
@@ -125,13 +125,7 @@ def rand_config(rng):
     L.append("Max_Dist:  %d" % max_dist)
     L.append("Min_Angle: %d" % min_angle)
 
-    meta = {
-        "gen_rate": gen_rate,
-        "dz_elev": dz_elev,
-        "speech_modes": speech_modes,
-        "end_nav": end_nav,
-        "max_dist": max_dist,
-    }
+    meta = {"gen_rate": gen_rate, "dz_elev": dz_elev}
     return "\n".join(L) + "\n", meta
 
 
@@ -159,23 +153,8 @@ def gen_jump_args(rng, meta, out_path):
     ]
 
 
-def is_known_13(meta):
-    has_57 = any(m in (5, 7) for m in meta["speech_modes"])
-    gated = meta["end_nav"] > 0 or meta["max_dist"] > 0
-    return has_57 and gated
-
-
-def normalize(data):
-    return data.replace(b"\r\n", b"\n")
-
-
-def run_iteration(seed, live_exe, ref_exe, audio_dir, failures_dir):
-    """Return one of 'match', 'crash', 'known-13', 'diff', 'error'.
-
-    The two binaries agree iff they produce the same (exit code, trace).
-    An identical non-zero exit (e.g. both hit the same pre-existing integer
-    divide-by-zero) is agreement, not a divergence -- bucketed as 'crash'.
-    Only a genuine live-vs-reference difference is a 'diff'."""
+def run_iteration(seed, live_exe, audio_dir, failures_dir):
+    """Return 'ok', 'crash', or 'error'. A non-zero simulator exit is a crash."""
     import random
     rng = random.Random(seed)
 
@@ -184,63 +163,39 @@ def run_iteration(seed, live_exe, ref_exe, audio_dir, failures_dir):
         tmp = Path(tmp)
         config_path = tmp / "config.txt"
         track_path = tmp / "track.csv"
-        live_trace = tmp / "live.trace"
-        ref_trace = tmp / "ref.trace"
+        trace_path = tmp / "out.trace"
         config_path.write_text(config_text, newline="\n")
 
         gj = gen_jump_args(rng, meta, track_path)
         r = subprocess.run(gj, capture_output=True, text=True)
         if r.returncode != 0 or not track_path.exists():
-            _save(failures_dir, seed, config_path, track_path, None, None,
-                  meta, gj, "gen_jump failed (harness bug):\n" + r.stderr)
+            _save(failures_dir, seed, config_path, track_path, meta, gj,
+                  "gen_jump failed (harness bug):\n" + r.stderr)
             return "error"
 
-        def sim(exe, trace):
-            return subprocess.run(
-                [str(exe), "--config", str(config_path), "--track",
-                 str(track_path), "--audio-dir", str(audio_dir),
-                 "--trace", str(trace)],
-                capture_output=True, text=True)
+        rr = subprocess.run(
+            [str(live_exe), "--config", str(config_path), "--track",
+             str(track_path), "--audio-dir", str(audio_dir),
+             "--trace", str(trace_path)],
+            capture_output=True, text=True)
 
-        rl = sim(live_exe, live_trace)
-        rr = sim(ref_exe, ref_trace)
-
-        live = normalize(live_trace.read_bytes()) if live_trace.exists() else b""
-        ref = normalize(ref_trace.read_bytes()) if ref_trace.exists() else b""
-
-        if rl.returncode == rr.returncode and live == ref:
-            # Identical behaviour, including an identical shared crash.
-            return "crash" if rl.returncode != 0 else "match"
-
-        if is_known_13(meta):
-            return "known-13"
-
-        import difflib
-        diff = ("live exit=%s ref exit=%s\n" % (rl.returncode, rr.returncode)
-                + "\n".join(list(difflib.unified_diff(
-                    ref.decode(errors="replace").splitlines(),
-                    live.decode(errors="replace").splitlines(),
-                    fromfile="ref.trace", tofile="live.trace",
-                    lineterm=""))[:60]))
-        _save(failures_dir, seed, config_path, track_path, live_trace,
-              ref_trace, meta, gj, diff)
-        return "diff"
+        if rr.returncode != 0:
+            _save(failures_dir, seed, config_path, track_path, meta, gj,
+                  "audio_sim exit=%s (0x%08X)\nstderr:\n%s"
+                  % (rr.returncode, rr.returncode & 0xFFFFFFFF, rr.stderr))
+            return "crash"
+        return "ok"
 
 
-def _save(failures_dir, seed, config_path, track_path, live_trace,
-          ref_trace, meta, gj, detail):
+def _save(failures_dir, seed, config_path, track_path, meta, gj, detail):
     dst = failures_dir / str(seed)
     dst.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(config_path, dst / "config.txt")
     if track_path.exists():
         shutil.copyfile(track_path, dst / "track.csv")
-    if live_trace and live_trace.exists():
-        shutil.copyfile(live_trace, dst / "live.trace")
-    if ref_trace and ref_trace.exists():
-        shutil.copyfile(ref_trace, dst / "ref.trace")
     (dst / "repro.txt").write_text(
         "seed: %d\n" % seed
-        + "reproduce: python scripts/fuzz_diff.py --seed %d\n" % seed
+        + "reproduce: python scripts/fuzz_crash.py --seed %d\n" % seed
         + "gen_jump: " + " ".join(gj[1:]) + "\n"
         + "meta: %r\n\n" % meta
         + detail + "\n", newline="\n")
@@ -255,17 +210,13 @@ def main():
     p.add_argument("--minutes", type=float, default=None,
                    help="time-box the run (minutes)")
     p.add_argument("--exe", default=str(TEST / "build" / "audio_sim.exe"),
-                   help="live simulator")
-    p.add_argument("--ref-exe", default=str(TEST / "build" / "audio_sim_ref.exe"),
-                   help="frozen-oracle simulator")
+                   help="simulator under test")
     p.add_argument("--audio-dir", default=str(TEST.parent / "TEMP" / "AUDIO"))
     args = p.parse_args()
 
     live_exe = Path(args.exe)
-    ref_exe = Path(args.ref_exe)
-    if not live_exe.exists() or not ref_exe.exists():
-        print("error: build audio_sim.exe and audio_sim_ref.exe first "
-              "(cmake --build build)")
+    if not live_exe.exists():
+        print("error: build audio_sim.exe first (cmake --build build)")
         return 2
 
     failures_dir = TEST / "fuzz-failures"
@@ -275,23 +226,18 @@ def main():
         args.iterations = 100
 
     n = 0
-    matched = crashes = known13 = diffs = errors = 0
+    ok = crashes = errors = 0
     start = time.time()
     seed = args.seed if args.seed is not None else 0
 
     while True:
-        res = run_iteration(seed, live_exe, ref_exe, args.audio_dir,
-                            failures_dir)
+        res = run_iteration(seed, live_exe, args.audio_dir, failures_dir)
         n += 1
-        if res == "match":
-            matched += 1
+        if res == "ok":
+            ok += 1
         elif res == "crash":
             crashes += 1
-        elif res == "known-13":
-            known13 += 1
-        elif res == "diff":
-            diffs += 1
-            print("DIFF   seed=%d  (saved to fuzz-failures/%d)" % (seed, seed))
+            print("CRASH  seed=%d  (saved to fuzz-failures/%d)" % (seed, seed))
         else:
             errors += 1
             print("ERROR  seed=%d  (saved to fuzz-failures/%d)" % (seed, seed))
@@ -304,12 +250,9 @@ def main():
         if args.minutes is not None and (time.time() - start) >= args.minutes * 60:
             break
 
-    real = diffs + errors
-    print("\nfuzz_diff: %d iterations, %d match, %d shared-crash, %d known-13, "
-          "%d real diffs (%d diff, %d error) in %.1fs"
-          % (n, matched, crashes, known13, real, diffs, errors,
-             time.time() - start))
-    return 1 if real else 0
+    print("\nfuzz_crash: %d iterations, %d ok, %d crash, %d error in %.1fs"
+          % (n, ok, crashes, errors, time.time() - start))
+    return 1 if (crashes or errors) else 0
 
 
 if __name__ == "__main__":
