@@ -12,8 +12,22 @@ Final quality gates, remove scaffolding, hand back to Michael.
    ≥33 mutants including the arbiter-table mutants from A7; all killed.
 2. Coverage (fresh gcda): 100% reachable lines+branches across
    `audio_control.c`, `flight_params.c`, `audio_speech.c`. Allowed
-   residue: the reserved LEFT_RIGHT metrics entry (QUIRKS #15) only.
-   Any other residue: add scenarios or simplify code.
+   residue (updated to carry forward prior Michael decisions):
+   - the reserved LEFT_RIGHT metrics entry (QUIRKS #15); AND
+   - `FS_FlightParams_GetSASCorrectionFactor` — develop-branch-merge
+     scaffolding, intentionally unused on this branch, EXEMPT from the
+     100% rule (ratified A7 / QUIRKS #20b).
+   Everything else must be 100%. Known residue to CLOSE here (QUIRKS #20
+   orchestrator note, post-B4): `audio_speech.c` had ~3 uncovered
+   branches — the QUIRKS-#19 `decimals != 0` guard FALSE leg (reachable
+   only via a mode-12 `Sp_Dec 0` entry) and two `labelToken`/Step-3-suffix
+   `switch` cases for label/unit modes no scenario config exercises. C1
+   may NOT edit firmware (FlySight/* is frozen at closeout), so close
+   these by ADDING scenarios (a mode-12 Sp_Dec-0 config; configs that
+   exercise the missing label/unit modes). If any such branch is
+   genuinely UNREACHABLE from a parser-valid config (e.g. tied to the
+   reserved mode 10), STOP and report it as a residue decision rather
+   than blessing an unexplained gap.
 3. Fuzz: the reference comparison is retired (post-B1 it diffs on
    every rounding boundary by design). Convert `fuzz_diff.py` into
    `fuzz_crash.py` mode or simply document in test/README.md that
