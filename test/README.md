@@ -28,7 +28,8 @@ test/
                       + fake audio driver, sequencer, timer server, GNSS
   sim/                deterministic clock, event loop, trace output
   runner/             audio_sim CLI + track file parser
-  scenarios/<name>/   config.txt + track.csv (+ optional opts.txt)
+  scenarios/<name>/   config.txt + track.csv, or a "track=tracks/X.csv"
+                      line in opts.txt for the shared tracks (+ other opts)
   golden/<name>.trace committed expected outputs
   out/                actual outputs (gitignored)
   tracks/             shared synthetic tracks (copied into scenarios)
@@ -83,7 +84,8 @@ layers are pure (state passed in by pointer). Config is read-only end to end.
   never gated on vAcc. The producer task (GNSS rate) writes the inactive
   `ToneSpec` slot and publishes it to the consumer-timer ISR with a single
   aligned 32-bit index flip + compiler barrier (A6 -- the one part the sim
-  cannot exercise; confirmed by hardware listen-test).
+  cannot exercise; PENDING hardware listen-test -- see the handoff
+  checklist at the end of plan/audio-rewrite/JOURNAL.md).
 
 ### How to add a new audio source
 
@@ -149,15 +151,19 @@ it only instruments the firmware sources, not the harness.
 
 ```powershell
 ./build/audio_sim.exe --config scenarios/alarms-freefall/config.txt `
-                      --track scenarios/alarms-freefall/track.csv `
+                      --track tracks/jump.csv `
                       --audio-dir ../TEMP/AUDIO
 ```
+
+(The scenario's track is named by the `track=` line in its `opts.txt` —
+most scenarios share the tracks under `tracks/`; some carry a bespoke
+local `track.csv`.)
 
 Output (stdout, or `--trace file`):
 
 ```text
 # fs-audio-sim v1
-# config=config.txt track=track.csv tail=2.000
+# config=config.txt track=jump.csv tail=2.000
 # rtc_tick_ns=488191
    0.009763  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=0.000
  147.600000  PLAY file=base.wav dur=0.820 vol=10 hmsl=1100.800
@@ -186,7 +192,9 @@ harness changed (or the build is stale).
 ### 3. Add a scenario
 
 ```powershell
-# a track: either generate one...
+# a track: reference a shared one (preferred -- single source of truth)...
+Add-Content scenarios/my-test/opts.txt "track=tracks/jump.csv"
+# ...or generate a bespoke one into the scenario dir...
 python scripts/gen_jump.py --out scenarios/my-test/track.csv `
        --exit-alt 4000 --deploy-alt 1000 --climb-rate 8
 # ...or copy a real device log (TRACK.CSV) -- $GNSS rows are parsed directly.
@@ -194,7 +202,7 @@ python scripts/gen_jump.py --out scenarios/my-test/track.csv `
 # a config: real config.txt syntax (see FlySight docs / config.c)
 notepad scenarios/my-test/config.txt
 
-# optional: scenarios/my-test/opts.txt with extra runner args, e.g. --tail 10
+# optional: more opts.txt lines with extra runner args, e.g. --tail 10
 
 python run_tests.py --filter my-test           # reports NEW
 ./build/audio_sim.exe --config ... --track ... # READ the trace first!

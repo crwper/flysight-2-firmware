@@ -1,5 +1,5 @@
 # fs-audio-sim v1
-# config=config.txt track=track.csv tail=2.000
+# config=config.txt track=jump.csv tail=2.000
 # rtc_tick_ns=488191
    0.009763  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=0.000
  147.600000  PLAY file=base.wav dur=0.820 vol=10 hmsl=1100.800

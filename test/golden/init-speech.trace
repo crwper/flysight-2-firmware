@@ -1,5 +1,5 @@
 # fs-audio-sim v1
-# config=config.txt track=track.csv tail=2.000
+# config=config.txt track=ground.csv tail=2.000
 # rtc_tick_ns=488191
    0.009763  PLAY file=0.wav dur=0.600 vol=10 hmsl=0.000
    0.615120  PLAY file=1.wav dur=0.560 vol=10 hmsl=0.000

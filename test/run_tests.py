@@ -5,7 +5,9 @@ Each scenario is a directory under scenarios/ containing:
     config.txt   device configuration (real config-file syntax)
     track.csv    GNSS track (synthetic simple CSV or real device TRACK.CSV)
     opts.txt     optional: extra audio_sim arguments, one per line
-                 (e.g. "--tail 10")
+                 (e.g. "--tail 10"), and/or a "track=<path>" line naming
+                 a shared track (relative to test/, e.g.
+                 "track=tracks/jump.csv") instead of a local track.csv
 
 For each scenario the simulator writes out/<name>.trace, which is compared
 byte-for-byte (after newline normalization) against golden/<name>.trace.
@@ -40,6 +42,10 @@ def main():
     p.add_argument("--diff-lines", type=int, default=40, help="max diff lines to show")
     args = p.parse_args()
 
+    # Windows CreateProcess won't resolve a RELATIVE program path with
+    # forward slashes (e.g. --exe build/audio_sim.exe); absolutize it.
+    args.exe = str(Path(args.exe).resolve())
+
     scenarios_dir = HERE / "scenarios"
     golden_dir = HERE / "golden"
     out_dir = HERE / "out"
@@ -61,19 +67,26 @@ def main():
         trace_path = out_dir / f"{name}.trace"
         golden_path = golden_dir / f"{name}.trace"
 
-        cmd = [
-            args.exe,
-            "--config", str(sc / "config.txt"),
-            "--track", str(sc / "track.csv"),
-            "--audio-dir", args.audio_dir,
-            "--trace", str(trace_path),
-        ]
+        track_path = sc / "track.csv"
+        extra_args = []
         opts = sc / "opts.txt"
         if opts.exists():
             for line in opts.read_text().splitlines():
                 line = line.strip()
-                if line and not line.startswith("#"):
-                    cmd += line.split()
+                if not line or line.startswith("#"):
+                    continue
+                if line.startswith("track="):
+                    track_path = HERE / line[len("track="):].strip()
+                else:
+                    extra_args += line.split()
+
+        cmd = [
+            args.exe,
+            "--config", str(sc / "config.txt"),
+            "--track", str(track_path),
+            "--audio-dir", args.audio_dir,
+            "--trace", str(trace_path),
+        ] + extra_args
 
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
