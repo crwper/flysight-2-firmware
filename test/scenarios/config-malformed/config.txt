@@ -1,23 +1,35 @@
-; Malformed config: group-member keys appear BEFORE their group opener.
+; Malformed config: group-member keys that (1) precede their opener and
+; (2) overflow their group. Exercises the QUIRKS #9 fix AND pins the
+; ACCEPTED overflow-rebind residual (QUIRKS #21) in FlySight/config.c.
 ;
-; This exercises the QUIRKS #9 fix in FlySight/config.c. The three keys
-; below (Alarm_Type, Win_Bottom, Sp_Dec) are group MEMBERS whose openers
-; (Alarm_Elev, Win_Top, Sp_Mode) have not been seen yet, so num_alarms /
-; num_windows / num_speech are all still 0. The old parser wrote these to
-; index num_x - 1 == -1 (out of bounds). The fix requires num_x > 0, so a
-; leading member is IGNORED with no effect.
+; PART A -- member BEFORE opener (the -1 bug, FIXED in B7):
+;   The three keys just below the header (Alarm_Type, Win_Bottom, Sp_Dec)
+;   are group MEMBERS with no preceding opener, so num_alarms / num_windows
+;   / num_speech are all still 0. The old parser wrote index num_x-1 == -1
+;   (out of bounds). The fix requires num_x > 0, so a leading member is
+;   IGNORED with no effect.
 ;
-; Pins:
-;   1. The three leading strays are ignored -- no phantom / index -1 alarm
-;      is created (num_alarms stays 0 until the real Alarm_Elev below).
-;   2. The well-formed alarm further down (Alarm_Elev 2000 / Alarm_Type 1)
-;      still parses and fires once, descending through 2000 m (~t=13.0).
+; PART B -- member of an OVERFLOW opener (in-bounds rebind, ACCEPTED
+; residual, NOT fixed):
+;   MAX_WINDOWS is 2. Two well-formed silence windows are defined below,
+;   then a THIRD Win_Top. The opener's < MAX guard drops the 3rd window
+;   (num_windows stays 2), but the Win_Bottom that follows it still writes
+;   windows[num_windows-1] == windows[1] -- rebinding the LAST VALID
+;   window's bottom (1000 m) to the overflow value (600 m). This is
+;   in-bounds (not the -1 bug) but a wrong value; a numeric guard cannot
+;   distinguish it from a legitimately full group (both have num==MAX).
 ;
-; Expected trace: first-fix beep + exactly one alarm beep at t=13.0 + END.
-; (Identical audible result to alarm-hold-at-elev, which shares this track;
-;  the leading malformed keys must make no difference.)
+; Pins in the trace:
+;   1. The three leading strays are ignored -- no phantom / index -1 alarm.
+;   2. The well-formed alarm (Alarm_Elev 1500 / Alarm_Type 1) fires once,
+;      descending through 1500 m.
+;   3. The overflow Win_Bottom 600 rebinds window 2 to [600, 1200]: the
+;      vertical-speed tone is SUPPRESSED all the way down to ~600 m, not
+;      just to 1000 m. Tone beeps are therefore ABSENT in the 600..1000 m
+;      band (they would be PRESENT there if the overflow member had been
+;      ignored) and RESUME only below ~600 m. That silence is the pin.
 
-; --- stray group-member keys BEFORE any opener (must be ignored) ---
+; --- PART A: stray group-member keys BEFORE any opener (must be ignored) ---
 Alarm_Type: 2    ; no preceding Alarm_Elev -> ignored (was writing alarms[-1])
 Win_Bottom: 500  ; no preceding Win_Top    -> ignored (was writing windows[-1])
 Sp_Dec:     2    ; no preceding Sp_Mode    -> ignored (was writing speech[-1])
@@ -25,23 +37,44 @@ Sp_Dec:     2    ; no preceding Sp_Mode    -> ignored (was writing speech[-1])
 Model:     7
 Rate:      200
 
-Mode:      2
+; Vertical-speed tone, constant rate, no SAS -> a steady beep stream that
+; the silence windows can suppress.
+Mode:      1     ; vertical speed
 Min:       0
-Max:       300
+Max:       8000  ; wide range so the ~4000 cm/s descent sits mid-scale (tone
+                 ; pitch distinct from the 1760 Hz alarm/first-fix beep)
 Limits:    1
 Volume:    6
 
+Mode_2:    1     ; rate from vertical speed
+Min_Val_2: 300
+Max_Val_2: 1500
+Min_Rate:  100   ; Min_Rate == Max_Rate -> constant 1 Hz beep
+Max_Rate:  100
+
+Sp_Rate:   0
 Sp_Volume: 6
 
-V_Thresh:  10000 ; alarms only (no tone/speech clutter)
+V_Thresh:  300   ; 3 m/s -- descent (40 m/s) keeps the tone active
 H_Thresh:  0
 
-Use_SAS:   1
+Use_SAS:   0
 
 Win_Above: 0
 Win_Below: 0
 DZ_Elev:   0
 
-; --- well-formed alarm (opener then members) ---
-Alarm_Elev: 2000
+; --- well-formed alarm (opener then member): fires descending through 1500 m ---
+Alarm_Elev: 1500
 Alarm_Type: 1
+
+; --- two well-formed silence windows (num_windows reaches MAX_WINDOWS = 2) ---
+Win_Top:    1800 ; window 1
+Win_Bottom: 1600
+
+Win_Top:    1200 ; window 2 (its bottom is the rebind target below)
+Win_Bottom: 1000
+
+; --- PART B: OVERFLOW opener (3rd Win_Top, dropped) + its member ---
+Win_Top:    5000 ; 3rd Win_Top overflows MAX_WINDOWS -> opener DROPPED, num stays 2
+Win_Bottom: 600  ; still writes windows[1].bottom -> rebinds window 2 to [600,1200]

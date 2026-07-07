@@ -1077,3 +1077,66 @@ Verification observed:
   git diff --stat golden    -> EMPTY (no tracked golden modified)
   git status golden         -> only config-malformed.trace added (untracked)
   mutation_test.py          -> 33 killed, 0 needing attention (0 NO-MATCH)
+
+---
+
+## B7 follow-up — 2026-07-06 — SUCCESS
+
+Michael reviewed the B7 `<= MAX` analysis and ACCEPTED it: config.c is CORRECT
+as committed at 15d6d48 and stays unchanged. The `<= MAX` member guards are
+load-bearing (a MAX-full group's last member legitimately writes index MAX-1);
+the card's `<= MAX -> <` suggestion was wrong. This follow-up only DOCUMENTS the
+correctness note and PINS the accepted overflow-rebind residual. NO firmware
+change (config.c untouched); touched only test/scenarios/config-malformed/
+(config.txt + track.csv), test/golden/config-malformed.trace, test/QUIRKS.md,
+this journal.
+
+QUIRKS bookkeeping: narrowed #9's FIXED scope to exactly the member-before-opener
+index -1 write, spelled out that `<= MAX` is correct/load-bearing and the `<`
+suggestion was NOT applied, marked #9 -> DONE. Added NEW row #21 for the
+overflow-rebind residual: with MORE than MAX openers, the overflow opener is
+dropped (num_x caps at MAX) but its member keys still write x[MAX-1], rebinding
+the last VALID entry's field to the overflow value. In-bounds (not the -1 bug) --
+a numeric guard can't fix it (legit-full and overflow both have num_x==MAX);
+needs an opener-side overflow flag. Decision: ACCEPTED RESIDUAL (Michael
+2026-07-06), out of plan scope, pinned by config-malformed.
+
+EXTENDED SCENARIO (config-malformed) -- reworked so ONE golden pins all three
+things. New config: a vertical-speed tone (Mode 1, Max 8000 so the ~4000 cm/s
+descent sits mid-scale -> f0=990, distinct from the 1760 Hz alarm/first-fix
+beep), constant 1 Hz rate (Min_Rate==Max_Rate==100), Use_SAS 0, V_Thresh 300 so
+the tone runs throughout the descent. Two well-formed silence windows
+(window 1 [1600,1800], window 2 [1000,1200]) reach MAX_WINDOWS=2, THEN a 3rd
+Win_Top 5000 (overflow, dropped) + Win_Bottom 600 rebinds windows[1].bottom
+1000 -> 600, extending window 2 to [600,1200]. Leading strays kept
+(Alarm_Type 2 / Win_Bottom 500 / Sp_Dec 2 before any opener); well-formed alarm
+now Alarm_Elev 1500 / Alarm_Type 1. New synthetic track: steady vertical descent
+2000 -> 400 m at velD 40 m/s (201 samples), no horizontal motion.
+
+Trace read line-by-line before re-blessing (29 lines). All three pins visible:
+ (a) STRAYS IGNORED: exactly ONE alarm beep in the whole trace (f0=1760 at
+     t=12.600000, hmsl 1496 -- the 1500 crossing). The leading Alarm_Type 2
+     created no phantom/-1 alarm; num_alarms == 1.
+ (b) WELL-FORMED ALARM FIRES: that same f0=1760 beep at hmsl 1496 (crossing
+     1500 between the 1504 and 1496 samples, QUIRKS #8-consistent), off the 1 Hz
+     tone grid so it is unmistakably the alarm.
+ (c) OVERFLOW REBIND OBSERVABLE: the f0=990 tone is active above window 1
+     (STOP at t=5.0 hmsl 1800), silent through window 1, active in the gap
+     [1200,1600], then STOP at t=20.0 hmsl 1200 and SILENT continuously down to
+     hmsl 560 -- i.e. NO tone beeps anywhere in the 600..1000 m band. Tone
+     resumes only at hmsl 560 (t=36.17), just below the rebound bottom 600. Had
+     the overflow Win_Bottom been ignored, window 2 would be [1000,1200] and the
+     tone would sound from ~1000 m down; its absence there is the pin.
+
+No config.c change this commit, so the mutation set (which never targets
+config.c, and whose NO-MATCH status depends only on source-anchor strings, not
+on scenarios) is unaffected -- a richer scenario can only add kill opportunities,
+never remove them; left at the B7 result (33 killed, 0 NO-MATCH). Differential
+fuzzer / audio_sim_ref NOT used (frozen ref diverges by design post-B1, and is
+irrelevant to a scenario/doc change).
+
+Verification observed:
+  run_tests.py              -> 53 passed, 0 failed, 0 new
+  git diff --stat golden    -> ONLY config-malformed.trace (26 ins / 3 del), no
+                               other golden modified
+  git diff -- FlySight/     -> EMPTY (config.c and all firmware unchanged)

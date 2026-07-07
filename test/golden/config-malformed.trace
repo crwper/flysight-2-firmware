@@ -1,6 +1,29 @@
 # fs-audio-sim v1
 # config=config.txt track=track.csv tail=2.000
 # rtc_tick_ns=488191
-   0.009763  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=2600.000
-  13.000000  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=2000.000
-  33.000000  END
+   0.009763  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=2000.000
+   0.986145  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1968.000
+   1.972291  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1928.000
+   2.958437  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1888.000
+   3.944583  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1848.000
+   4.930729  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1808.000
+   5.000000  STOP hmsl=1800.000 (cuts tone)
+  11.111227  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1560.000
+  12.097372  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1520.000
+  12.600000  BEEP f0=1760 f1=1760 ms=125 vol=10 hmsl=1496.000
+  13.083518  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1480.000
+  14.069664  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1440.000
+  15.055810  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1400.000
+  16.041956  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1360.000
+  17.028102  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1320.000
+  18.014247  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1280.000
+  19.000393  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1240.000
+  19.986539  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=1208.000
+  20.000000  STOP hmsl=1200.000 (cuts tone)
+  36.174953  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=560.000
+  37.161098  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=520.000
+  38.147244  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=480.000
+  39.133390  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=440.000
+  40.119536  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=400.000
+  41.105682  BEEP f0=990 f1=990 ms=125 vol=10 hmsl=400.000
+  42.000000  END
