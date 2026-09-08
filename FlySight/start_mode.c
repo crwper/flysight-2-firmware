@@ -29,6 +29,7 @@
 #include "gnss.h"
 #include "log.h"
 #include "resource_manager.h"
+#include "sensor_time.h"
 #include "start_control.h"
 #include "state.h"
 
@@ -44,6 +45,10 @@ void FS_StartMode_Init(void)
 
 	/* Initialize controller */
 	FS_StartControl_Init();
+
+	/* Initialize and start microsecond sensor timer */
+	FS_SensorTime_Init();
+	FS_SensorTime_Start();
 
 	/* Initialize configuration */
 	FS_Config_Init();
@@ -123,6 +128,9 @@ void FS_StartMode_DeInit(void)
 		// Disable logging
 		FS_Log_DeInit(FS_State_Get()->temp_folder);
 	}
+
+	/* Stop microsecond sensor timer */
+	FS_SensorTime_Stop();
 
 	/* De-initialize FatFS */
 	FS_ResourceManager_ReleaseResource(FS_RESOURCE_FATFS);
