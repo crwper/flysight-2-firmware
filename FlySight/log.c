@@ -117,13 +117,7 @@ static FIL eventFile;
 
 static uint8_t timer_id;
 
-static bool     validDateTime;
-static uint16_t saved_year;
-static uint8_t  saved_month;
-static uint8_t  saved_day;
-static uint8_t  saved_hour;
-static uint8_t  saved_min;
-static uint8_t  saved_sec;
+static uint64_t startTicks;
 
 static uint32_t updateCount;
 static uint32_t updateTotalTime;
@@ -847,6 +841,36 @@ static FRESULT delete_node (
 	return fr;
 }
 
+// Get the local date and time at which the session started, for naming its
+// folder: the RTC now, stepped back by the session length from the sensor
+// timer. Returns false if the RTC has never been set from GNSS, in which
+// case the outputs are left alone.
+static bool FS_Log_GetStartDateTime(uint16_t *year, uint8_t *month, uint8_t *day,
+		uint8_t *hour, uint8_t *min, uint8_t *sec)
+{
+	RTC_TimeTypeDef sTime;
+	RTC_DateTypeDef sDate;
+	uint32_t elapsed_s;
+	uint32_t timestamp;
+
+	if (!FS_RTC_IsValid()) return false;
+
+	// Read time before date, as the HAL requires
+	HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
+	HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
+
+	// Step back to the start of the session
+	elapsed_s = (uint32_t)((FS_SensorTime_GetTicks() - startTicks) / 1000000);
+	timestamp = mk_gmtime(2000 + sDate.Year, sDate.Month, sDate.Date,
+			sTime.Hours, sTime.Minutes, sTime.Seconds) - elapsed_s;
+	gmtime_r(timestamp, year, month, day, hour, min, sec);
+
+	// Apply timezone offset to get local time for folder naming
+	FS_RTC_AdjustToLocal(year, month, day, hour, min, sec);
+
+	return true;
+}
+
 HAL_StatusTypeDef FS_Log_Init(uint32_t temp_folder, uint8_t flags)
 {
 	FILINFO fno;
@@ -888,33 +912,8 @@ HAL_StatusTypeDef FS_Log_Init(uint32_t temp_folder, uint8_t flags)
 	vbatWrI = 0;
 	vbatUsed = 0;
 
-	// Check if RTC has been previously set by GNSS
-	if (FS_RTC_IsValid())
-	{
-		RTC_TimeTypeDef sTime;
-		RTC_DateTypeDef sDate;
-
-		// Must call GetTime before GetDate to lock shadow registers
-		HAL_RTC_GetTime(&hrtc, &sTime, RTC_FORMAT_BIN);
-		HAL_RTC_GetDate(&hrtc, &sDate, RTC_FORMAT_BIN);
-
-		saved_year  = 2000 + sDate.Year;
-		saved_month = sDate.Month;
-		saved_day   = sDate.Date;
-		saved_hour  = sTime.Hours;
-		saved_min   = sTime.Minutes;
-		saved_sec   = sTime.Seconds;
-
-		// Apply timezone offset to get local time for folder naming
-		FS_RTC_AdjustToLocal(&saved_year, &saved_month, &saved_day,
-				&saved_hour, &saved_min, &saved_sec);
-
-		validDateTime = true;
-	}
-	else
-	{
-		validDateTime = false;
-	}
+	// Note when the session started, for naming its folder in FS_Log_DeInit
+	startTicks = FS_SensorTime_GetTicks();
 
 	updateCount = 0;
 	updateTotalTime = 0;
@@ -1033,11 +1032,18 @@ void FS_Log_DeInit(uint32_t temp_folder)
 {
 	char date[15], time[15];
 	char oldPath[50];
+	uint16_t year;
+	uint8_t month, day, hour, min, sec;
 
 	if (logState == LOG_STATE_ACTIVE)
 	{
 		// Delete timer
 		HW_TS_Delete(timer_id);
+
+		if (!FS_RTC_IsValid())
+		{
+			FS_Log_WriteEvent("RTC never set from GNSS; session left in /temp");
+		}
 	}
 
 	if ((logState == LOG_STATE_ACTIVE) && (enable_flags & FS_LOG_ENABLE_EVENT))
@@ -1088,14 +1094,17 @@ void FS_Log_DeInit(uint32_t temp_folder)
 		f_close(&eventFile);
 	}
 
-	if ((logState == LOG_STATE_ACTIVE) && validDateTime)
+	// The RTC is set from GNSS on the first 3D fix of a session, so it is
+	// usually valid by now even if it was not when the session started
+	if ((logState == LOG_STATE_ACTIVE) &&
+			FS_Log_GetStartDateTime(&year, &month, &day, &hour, &min, &sec))
 	{
 		uint8_t retries;
 		uint8_t try_sec;
 
-		// Format date from saved local time (timezone already applied at init)
-		sprintf(date, "%02d-%02d-%02d", saved_year % 100, saved_month, saved_day);
-		sprintf(time, "%02d-%02d-%02d", saved_hour, saved_min, saved_sec);
+		// Format date and time from local start of session
+		sprintf(date, "%02d-%02d-%02d", year % 100, month, day);
+		sprintf(time, "%02d-%02d-%02d", hour, min, sec);
 
 		sprintf(path, "/%s", date);
 		if (f_stat(path, 0) != FR_OK)
@@ -1110,11 +1119,11 @@ void FS_Log_DeInit(uint32_t temp_folder)
 
 		// Handle collisions: if target exists, increment seconds and retry
 		retries = 0;
-		try_sec = saved_sec;
+		try_sec = sec;
 		while (f_stat(path, 0) == FR_OK && retries < 60)
 		{
 			try_sec = (try_sec + 1) % 60;
-			sprintf(time, "%02d-%02d-%02d", saved_hour, saved_min, try_sec);
+			sprintf(time, "%02d-%02d-%02d", hour, min, try_sec);
 			sprintf(path, "/%s/%s", date, time);
 			retries++;
 		}
